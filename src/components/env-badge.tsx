@@ -24,17 +24,17 @@ export function PaymentModeLegend() {
     {
       key: "simulated",
       label: "Simulated",
-      detail: "App-local mock only — not a provider response",
+      detail: "Simulated only — not a provider response",
     },
     {
       key: "test",
       label: "Test",
-      detail: "Provider test-mode confirmation (Stripe / Paystack)",
+      detail: "Future provider test mode — unavailable in this demo",
     },
     {
       key: "live",
       label: "Live",
-      detail: "Real money — disabled by default; never the default",
+      detail: "Live payment — not implemented; no money moves",
     },
   ] as const;
 

@@ -1,13 +1,26 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { EnvBadge, PaymentModeLegend } from "@/components/env-badge";
 import { HeroVisual } from "@/components/hero-visual";
 import { ListingCard } from "@/components/listing-card";
-import { bookings, getProvider, listings, SEED_META } from "@/data/seed";
+import { getProvider, listings, SEED_META } from "@/data/seed";
 import { BRAND } from "@/lib/brand";
+import { listAllBookings } from "@/lib/marketplace-repository";
+import { getDatabaseUrl } from "@/lib/store/db";
+import {
+  BookingStatusBadge,
+  DataSourceBadge,
+} from "@/components/status-badge";
 
-export default function HomePage() {
+export default function HomePage({
+  searchParams,
+}: PageProps<"/">) {
   return (
     <>
+      <Suspense fallback={null}>
+        <DemoGateNotice searchParams={searchParams} />
+      </Suspense>
       <section className="relative min-h-[min(92vh,720px)] overflow-hidden border-b border-[var(--color-line)]">
         <div className="absolute inset-0 opacity-90" aria-hidden>
           <HeroVisual />
@@ -75,8 +88,8 @@ export default function HomePage() {
             Payment mode labels
           </h2>
           <p className="mt-1 max-w-2xl text-[var(--color-ink-muted)]">
-            Later milestones wire providers. The UI will always distinguish
-            these states so a success URL never silently means “paid”.
+            This demo has no payment-provider integration. Simulated outcomes remain
+            distinct from provider-confirmed payment.
           </p>
           <div className="mt-6">
             <PaymentModeLegend />
@@ -96,7 +109,7 @@ export default function HomePage() {
               },
               {
                 title: "Admin",
-                body: "Inspect bookings, fee math, and a webhook feed ready for real events.",
+                body: "Review simulated bookings, fee calculations, and placeholder webhook events.",
                 href: "/admin",
               },
             ].map((role) => (
@@ -117,23 +130,99 @@ export default function HomePage() {
 
           <div className="mt-10">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-ink-muted)]">
-              Sample bookings (seed)
+              Bookings (seed + Neon runtime records)
             </h3>
-            <ul className="mt-3 flex flex-wrap gap-3">
-              {bookings.map((b) => (
-                <li key={b.id}>
-                  <Link
-                    href={`/bookings/${b.id}`}
-                    className="inline-flex rounded-md border border-[var(--color-line)] bg-[var(--color-canvas)] px-3 py-2 text-sm font-medium hover:border-[var(--color-brand)]"
-                  >
-                    {b.id.replace("book_", "")}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <Suspense
+              fallback={
+                <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
+                  Loading bookings…
+                </p>
+              }
+            >
+              <BookingLinks />
+            </Suspense>
           </div>
         </div>
       </section>
     </>
+  );
+}
+
+async function BookingLinks() {
+  await connection();
+  const databaseConfigured = Boolean(getDatabaseUrl());
+  let bookings;
+  try {
+    bookings = await listAllBookings();
+  } catch {
+    return (
+      <p className="mt-3 text-sm text-rose-800" role="alert">
+        Runtime bookings are temporarily unavailable. Seed listings remain
+        available; try again after the database is restored.
+      </p>
+    );
+  }
+
+  if (bookings.length === 0) {
+    return (
+      <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
+        No bookings yet. Create one from a listing.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {!databaseConfigured ? (
+        <p className="mt-3 text-sm text-amber-800" role="status">
+          Neon is not configured. These are seed examples only; booking changes
+          are unavailable.
+        </p>
+      ) : null}
+      <ul className="mt-3 flex flex-wrap gap-3">
+        {bookings.map((b) => (
+          <li key={b.id}>
+            <Link
+              href={`/bookings/${b.id}`}
+              className="inline-flex flex-col gap-1 rounded-md border border-[var(--color-line)] bg-[var(--color-canvas)] px-3 py-2 text-sm font-medium hover:border-[var(--color-brand)]"
+            >
+              <span className="font-mono">
+                {b.id.replace(/^book_(rt_)?/, "")}
+              </span>
+              <span className="flex flex-wrap gap-1">
+                <DataSourceBadge source={b.dataSource} />
+                <BookingStatusBadge status={b.status} />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+
+async function DemoGateNotice({
+  searchParams,
+}: {
+  searchParams: PageProps<"/">["searchParams"];
+}) {
+  const params = await searchParams;
+  const gateParam = params.demo_gate;
+  const demoGate =
+    gateParam === "required" ||
+    (Array.isArray(gateParam) && gateParam.includes("required"));
+
+  if (!demoGate) return null;
+
+  return (
+    <div
+      className="border-b border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-950 sm:px-6"
+      role="status"
+    >
+      Provider/Admin views are gated on this deployment. Ask the demo host for
+      the shared code and enter it on <Link href="/demo-access">the demo access
+      page</Link>. This is not a login system.
+    </div>
   );
 }

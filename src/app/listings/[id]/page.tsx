@@ -2,12 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookingForm } from "@/components/booking-form";
 import { DataSourceBadge } from "@/components/status-badge";
-import {
-  bookings,
-  categoryLabels,
-  getListing,
-  getProvider,
-} from "@/data/seed";
+import { bookings as seedBookings, categoryLabels, getListing, getProvider } from "@/data/seed";
 import { formatDuration, formatNgnFromKobo } from "@/lib/format";
 
 export default async function ListingPage({
@@ -19,7 +14,9 @@ export default async function ListingPage({
   const provider = getProvider(listing.providerId);
   if (!provider) notFound();
 
-  const sampleBooking = bookings.find((b) => b.listingId === listing.id);
+  const sampleBooking = seedBookings.find(
+    (booking) => booking.listingId === listing.id,
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
@@ -99,7 +96,8 @@ export default async function ListingPage({
             Create a booking
           </h2>
           <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-            Form UI only in Milestone 1. Nothing is charged or persisted.
+            Saves a pending booking to Neon Postgres when configured. The payment outcome
+            is simulated only; nothing is charged.
           </p>
           <div className="mt-5">
             <BookingForm

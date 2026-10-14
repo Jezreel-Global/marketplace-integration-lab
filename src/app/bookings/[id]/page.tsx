@@ -1,30 +1,50 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BookingActionsPanel } from "@/components/booking-actions-panel";
 import { FeeExplainer } from "@/components/fee-explainer";
+import { RuntimeDataUnavailable } from "@/components/runtime-data-unavailable";
 import {
   BookingStatusBadge,
   DataSourceBadge,
   PaymentModeBadge,
   PaymentStatusBadge,
 } from "@/components/status-badge";
+import { getListing, getProvider } from "@/data/seed";
 import {
-  getBooking,
-  getListing,
-  getProvider,
-  paymentAttempts,
-} from "@/data/seed";
+  getBookingById,
+  listPaymentAttemptsForBooking,
+} from "@/lib/marketplace-repository";
 import { formatDateTime, formatNgnFromKobo } from "@/lib/format";
+import type { Booking, PaymentAttemptRecord } from "@/types/marketplace";
 
 export default async function BookingPage({
   params,
 }: PageProps<"/bookings/[id]">) {
   const { id } = await params;
-  const booking = getBooking(id);
+  let booking: Booking | undefined;
+  try {
+    booking = await getBookingById(id);
+  } catch {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+        <RuntimeDataUnavailable title="Booking details are temporarily unavailable" />
+      </div>
+    );
+  }
   if (!booking) notFound();
 
   const listing = getListing(booking.listingId);
   const provider = getProvider(booking.providerId);
-  const attempts = paymentAttempts.filter((p) => p.bookingId === booking.id);
+  let attempts: PaymentAttemptRecord[];
+  try {
+    attempts = await listPaymentAttemptsForBooking(booking.id);
+  } catch {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+        <RuntimeDataUnavailable title="Payment-attempt history is temporarily unavailable" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
@@ -52,7 +72,19 @@ export default async function BookingPage({
           role="status"
         >
           This booking is labelled <strong>paid</strong> only as illustrative
-          seed data. It is not a Stripe or Paystack confirmation.
+          seed data. It is not a Stripe or Paystack confirmation, and it is not
+          a local simulated payment either.
+        </div>
+      )}
+
+      {booking.status === "paid" && booking.dataSource === "mock" && (
+        <div
+          className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          role="status"
+        >
+          Status is <strong>paid</strong> after a <strong>simulated</strong>{" "}
+          demo outcome only. No payment provider confirmed this and no real money
+          moved.
         </div>
       )}
 
@@ -123,13 +155,15 @@ export default async function BookingPage({
         <FeeExplainer amountKobo={booking.amountKobo} />
       </div>
 
+      <BookingActionsPanel booking={booking} />
+
       <section className="mt-10">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
           Payment attempts
         </h2>
         {attempts.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
-            No payment attempts recorded for this booking.
+            No payment attempts recorded for this booking yet.
           </p>
         ) : (
           <ul className="mt-4 space-y-3">
