@@ -12,10 +12,17 @@ const links = [
   { href: "/admin", label: "Admin" },
 ] as const;
 
-export function SiteHeader() {
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-
+function HeaderShell({
+  pathname,
+  open,
+  onToggle,
+  onNavigate,
+}: {
+  pathname: string | null;
+  open: boolean;
+  onToggle?: () => void;
+  onNavigate?: () => void;
+}) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-canvas)]/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
@@ -29,9 +36,10 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {links.map((link) => {
             const active =
-              link.href === "/"
+              pathname != null &&
+              (link.href === "/"
                 ? pathname === "/"
-                : pathname.startsWith(link.href);
+                : pathname.startsWith(link.href));
             return (
               <Link
                 key={link.href}
@@ -57,7 +65,7 @@ export function SiteHeader() {
           className="inline-flex items-center justify-center rounded-md border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] md:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
-          onClick={() => setOpen((v) => !v)}
+          onClick={onToggle}
         >
           Menu
         </button>
@@ -74,7 +82,7 @@ export function SiteHeader() {
                 key={link.href}
                 href={link.href}
                 className="rounded-md px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-[var(--color-surface)]"
-                onClick={() => setOpen(false)}
+                onClick={onNavigate}
               >
                 {link.label}
               </Link>
@@ -86,5 +94,24 @@ export function SiteHeader() {
         </div>
       )}
     </header>
+  );
+}
+
+/** Static shell for prerender while `usePathname` resolves under Cache Components. */
+export function SiteHeaderFallback() {
+  return <HeaderShell pathname={null} open={false} />;
+}
+
+export function SiteHeader() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <HeaderShell
+      pathname={pathname}
+      open={open}
+      onToggle={() => setOpen((v) => !v)}
+      onNavigate={() => setOpen(false)}
+    />
   );
 }

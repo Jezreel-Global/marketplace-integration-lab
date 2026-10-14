@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Source_Sans_3, Syne } from "next/font/google";
-import { SiteHeader } from "@/components/site-header";
+import { Suspense } from "react";
+import { SiteHeader, SiteHeaderFallback } from "@/components/site-header";
 import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
@@ -31,7 +32,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${syne.variable} ${sourceSans.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <SiteHeader />
+        <Suspense fallback={<SiteHeaderFallback />}>
+          <SiteHeader />
+        </Suspense>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-[var(--color-line)] bg-[var(--color-surface)]/70">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-[var(--color-ink-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
