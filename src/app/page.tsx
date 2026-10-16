@@ -1,17 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { EnvBadge, PaymentModeLegend } from "@/components/env-badge";
 import { HeroVisual } from "@/components/hero-visual";
 import { ListingCard } from "@/components/listing-card";
 import { getProvider, listings, SEED_META } from "@/data/seed";
 import { BRAND } from "@/lib/brand";
-import { listAllBookings } from "@/lib/marketplace-repository";
-import { getDatabaseUrl } from "@/lib/store/db";
-import {
-  BookingStatusBadge,
-  DataSourceBadge,
-} from "@/components/status-badge";
 
 export default function HomePage({
   searchParams,
@@ -132,13 +125,13 @@ export default function HomePage({
                 href: "/sign-up",
               },
               {
-                title: "Provider demo",
+                title: "Provider examples",
                 body: "Sample provider bookings only. This is not an authenticated seller portal.",
                 href: "/provider",
               },
               {
-                title: "Admin demo",
-                body: "Inspect seed and simulated records. This page is not role-protected.",
+                title: "Admin tools",
+                body: "Inspect seed and simulated records. Access requires an allowlisted Clerk administrator account.",
                 href: "/admin",
               },
             ].map((role) => (
@@ -157,79 +150,11 @@ export default function HomePage({
             ))}
           </div>
 
-          <div className="mt-10">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-ink-muted)]">
-              Bookings (seed + Neon runtime records)
-            </h3>
-            <Suspense
-              fallback={
-                <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
-                  Loading bookings…
-                </p>
-              }
-            >
-              <BookingLinks />
-            </Suspense>
-          </div>
         </div>
       </section>
     </>
   );
 }
-
-async function BookingLinks() {
-  await connection();
-  const databaseConfigured = Boolean(getDatabaseUrl());
-  let bookings;
-  try {
-    bookings = await listAllBookings();
-  } catch {
-    return (
-      <p className="mt-3 text-sm text-rose-800" role="alert">
-        Runtime bookings are temporarily unavailable. Seed listings remain
-        available; try again after the database is restored.
-      </p>
-    );
-  }
-
-  if (bookings.length === 0) {
-    return (
-      <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
-        No bookings yet. Create one from a listing.
-      </p>
-    );
-  }
-
-  return (
-    <>
-      {!databaseConfigured ? (
-        <p className="mt-3 text-sm text-amber-800" role="status">
-          Neon is not configured. These are seed examples only; booking changes
-          are unavailable.
-        </p>
-      ) : null}
-      <ul className="mt-3 flex flex-wrap gap-3">
-        {bookings.map((b) => (
-          <li key={b.id}>
-            <Link
-              href={`/bookings/${b.id}`}
-              className="inline-flex flex-col gap-1 rounded-md border border-[var(--color-line)] bg-[var(--color-canvas)] px-3 py-2 text-sm font-medium hover:border-[var(--color-brand)]"
-            >
-              <span className="font-mono">
-                {b.id.replace(/^book_(rt_)?/, "")}
-              </span>
-              <span className="flex flex-wrap gap-1">
-                <DataSourceBadge source={b.dataSource} />
-                <BookingStatusBadge status={b.status} />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-}
-
 
 async function DemoGateNotice({
   searchParams,

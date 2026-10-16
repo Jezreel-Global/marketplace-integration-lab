@@ -51,6 +51,7 @@ Copy `.env.example` to `.env.local` (gitignored):
 | `DATABASE_TEST_DATABASE` | Only for DB tests | Exact database name matching the `DATABASE_URL` path |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Optional for seller auth | Clerk development publishable key; public by design |
 | `CLERK_SECRET_KEY` | Optional for seller auth | Clerk development secret; server-only, never prefix with `NEXT_PUBLIC_` |
+| `ADMIN_CLERK_USER_IDS` | Required for `/admin` | Comma-separated Clerk user IDs allowed to administer the demo; server-only |
 
 The CLI scripts and database tests load this ignored `.env.local` through Next.js's environment loader. Keep DB-test confirmations out of Production and Preview deployment settings.
 
@@ -60,9 +61,11 @@ Never prefix server secrets with `NEXT_PUBLIC_`. The Clerk publishable key is th
 
 Clerk provides real seller sign-up, sign-in, sign-out, and server-verified sessions. The app uses Clerk's stable user ID as seller identity; email addresses and browser-supplied IDs/roles do not establish identity. Seller profiles are stored separately from fictional seed providers in `seller_profiles`. This milestone adds no Stripe account, payout, payment activity, or seed-provider association.
 
-To enable local authentication, create a Clerk development application and place its publishable key in `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and secret key in `CLERK_SECRET_KEY` in ignored `.env.local`. Configure sign-up email verification in Clerk if email sign-up is enabled. Do not paste credentials into chat or expose the secret key to client code. Without both values, seller routes show setup guidance and seller operations fail closed; no successful session is simulated. Public browsing, fictional provider pages, and simulated bookings stay available.
+To enable local authentication, create a Clerk development application and place its publishable key in `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and secret key in `CLERK_SECRET_KEY` in ignored `.env.local`. Configure sign-up email verification in Clerk if email sign-up is enabled. Do not paste credentials into chat or expose the secret key to client code. Without both values, seller routes show setup guidance and seller operations fail closed; no successful session is simulated. Public browsing and booking creation remain available. Simulated outcomes are restricted to allowlisted administrators until runtime bookings have authenticated customer ownership.
 
-Customers can browse and create simulated bookings without signing in. Seller sign-up and sign-in return to `/seller` to create or view the account-specific profile. That profile does not provide access to the sample provider dashboard; `/provider` and `/admin` remain clearly labelled demo views, not role-protected portals.
+Customers can browse and create bookings without signing in. Seller sign-up and sign-in return to `/seller` to create or view the account-specific profile. That profile does not provide access to fictional providers. `/provider` is a public seed-only illustration; `/admin` requires the separate server-side Clerk user-ID allowlist.
+
+The `/admin` page and simulated payment/cancellation controls require a verified Clerk session whose user ID appears in the server-only `ADMIN_CLERK_USER_IDS` comma-separated allowlist. Missing Clerk configuration, a missing or malformed allowlist, signed-out sessions, and non-allowlisted users fail closed. Configure the same variable in ignored `.env.local` for local use and in the appropriate server-side Vercel environment settings before expecting an administrator to access the demo. `/provider` remains a public, seed-only illustration and is not linked to Clerk seller profiles.
 
 Migration `003_seller_profiles.sql` creates the seller-profile table and unique Clerk identity constraint. It is a reviewed migration and is not applied automatically; apply it only after confirming the intended Neon database. Profile persistence also requires `DATABASE_URL`.
 
@@ -164,26 +167,28 @@ npm run build
    ```
 
 6. Verify:
-   - Home page loads with seed listings.
-   - Create a booking from a listing → pending payment.
-   - Simulate failure, then success — banners state that the outcome is simulated and no real money moved.
-   - `/provider` and `/admin` show the new runtime row (enter the shared code at `/demo-access` if the token gate is configured).
+   - Home page loads with seed listings and does not list runtime booking IDs.
+   - Create a booking from a listing → pending payment and a generic confirmation; runtime details are not visible to signed-out customers.
+   - An allowlisted administrator can inspect runtime rows at `/admin` and simulate failure, then success; banners state that the outcome is simulated and no real money moved.
+   - `/provider` remains seed-only and does not display runtime bookings.
    - Redeploy or restart does not lose the runtime booking.
 
 ## Public-demo safety
 
 - Payments remain **simulated** only.
-- `/admin` and `/provider` are **not** authenticated admin systems; banners say so.
-- Prefer **Vercel Deployment Protection** for shared links. The optional `DEMO_ACCESS_TOKEN` gate is a shared demo code, not user authentication; it is entered at `/demo-access`, never embedded in a URL, and grants an eight-hour HttpOnly cookie.
+- `/admin` requires a Clerk-verified user ID listed in `ADMIN_CLERK_USER_IDS`. The optional `DEMO_ACCESS_TOKEN` can add a shared-code gate but does not replace this authorization.
+- `/provider` is a public illustration containing static fictional seed records only; it does not show runtime or private seller data.
+- Prefer **Vercel Deployment Protection** for public previews.
+- Runtime booking details and simulated controls are unavailable to customers until bookings are associated with authenticated customer identities. Public booking confirmations do not expose runtime booking IDs, names, email addresses, or payment attempts.
 - Booking inputs are validated server-side; DB/driver errors are mapped to generic messages. Dashboard reads display an unavailable state instead of silently falling back to seed-only totals.
 - The booking form tells visitors to use fictional details. Do not submit real personal or financial information.
 - Runtime data and secrets stay out of Git (`.env*`, `/data/*` except `.gitkeep`).
 
 ## Security limitations (current)
 
-- Seller authentication is limited to a minimal profile. The `/provider` and `/admin` routes remain mock/demo dashboards and receive no seller or admin authorization from Clerk.
-- Demo gate is a shared code, not per-user auth. Deployments without `DEMO_ACCESS_TOKEN` leave the dashboards open unless Vercel Deployment Protection is enabled.
-- Customer name/email entered in the demo are stored in Postgres — use fictional values only.
+- Seller authentication is limited to a minimal profile and is not linked to fictional providers. Runtime booking ownership is not modeled, so customer access to a booking detail page is intentionally withheld; only allowlisted administrators can inspect runtime records and simulate outcomes.
+- The admin allowlist is a deployment-managed ID list, not a self-service role system. Keep it server-side and update it only through a trusted environment configuration process.
+- Customer name/email entered in the demo are stored in Postgres and visible to allowlisted administrators — use fictional values only.
 - A configured but unreachable or unmigrated database makes runtime data views unavailable; restore connectivity or apply migrations before presenting the demo.
 - Reset commands require both an explicit non-production assertion and an exact database-name match, but operators must still verify the Neon branch and URL before running them.
 

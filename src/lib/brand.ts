@@ -2,7 +2,7 @@
 export const BRAND = {
   name: "Marketplace Integration Lab",
   shortName: "MIL",
-  tagline: "Learn how marketplace payments work — safely, in test mode.",
+  tagline: "Learn how marketplace payments work — with clearly labelled simulations.",
   description:
     "A fictional Nigerian service marketplace for exploring Stripe Checkout, Stripe Connect eligibility, and Paystack — without confusing mock data for real money.",
 } as const;

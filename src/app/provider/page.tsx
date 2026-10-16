@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { connection } from "next/server";
 import { EnvBadge } from "@/components/env-badge";
-import { RuntimeDataUnavailable } from "@/components/runtime-data-unavailable";
 import {
   BookingStatusBadge,
   DataSourceBadge,
@@ -10,30 +8,17 @@ import {
 } from "@/components/status-badge";
 import {
   categoryLabels,
+  bookings as seedBookings,
   getListing,
   listings,
   listingsForProvider,
   providers,
 } from "@/data/seed";
-import { listAllBookings } from "@/lib/marketplace-repository";
-import { getDatabaseUrl } from "@/lib/store/db";
-import type { Booking } from "@/types/marketplace";
 import { formatDateTime, formatNgnFromKobo } from "@/lib/format";
 
-export default async function ProviderPage() {
-  await connection();
-  let bookings: Booking[];
-  try {
-    bookings = await listAllBookings();
-  } catch {
-    return (
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-        <RuntimeDataUnavailable title="Provider data is temporarily unavailable" />
-      </div>
-    );
-  }
-  const databaseConfigured = Boolean(getDatabaseUrl());
-  const illustrativePaidShare = bookings
+export default function ProviderPage() {
+  const sampleBookings = seedBookings;
+  const illustrativePaidShare = sampleBookings
     .filter((b) => b.status === "paid")
     .reduce((sum, b) => sum + b.providerShareKobo, 0);
 
@@ -45,11 +30,11 @@ export default async function ProviderPage() {
             Seller view
           </p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-ink)] sm:text-4xl">
-            Provider dashboard
+            Fictional provider examples
           </h1>
           <p className="mt-2 max-w-2xl text-[var(--color-ink-muted)]">
-            Mock seller profiles plus merged seed and runtime bookings. No payment
-            provider account is connected.
+            Fictional seller profiles and static seed bookings only. Runtime
+            bookings and signed-in seller data are not shown here.
           </p>
         </div>
         <EnvBadge compact />
@@ -62,23 +47,16 @@ export default async function ProviderPage() {
         shares.
       </aside>
 
-      {!databaseConfigured ? (
-        <aside className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
-          Neon is not configured. This view contains seed examples only; runtime
-          records and booking changes are unavailable.
-        </aside>
-      ) : null}
-
       <aside className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        <strong>Illustrative earnings only.</strong> Paid share totals include
-        seed illustrations and simulated payments in Postgres — never a payout,
-        settlement, or bank credit. No real money moves.
+        <strong>Illustrative earnings only.</strong> Seed-only example totals;
+        runtime bookings are excluded. These are not payouts, settlements, or
+        bank credits. No real money moves.
       </aside>
 
       <dl className="mt-8 grid gap-4 sm:grid-cols-3">
         <div className="border-l-2 border-[var(--color-brand)] pl-4">
           <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-muted)]">
-            Mock providers
+            Fictional providers
           </dt>
           <dd className="mt-1 text-2xl font-semibold tabular-nums">
             {providers.length}
@@ -105,7 +83,7 @@ export default async function ProviderPage() {
       <div className="mt-12 space-y-12">
         {providers.map((provider) => {
           const providerListings = listingsForProvider(provider.id);
-          const providerBookings = bookings.filter(
+          const providerBookings = sampleBookings.filter(
             (b) => b.providerId === provider.id,
           );
           const paidShare = providerBookings

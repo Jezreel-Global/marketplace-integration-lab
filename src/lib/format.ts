@@ -10,6 +10,27 @@ export function formatNgnFromKobo(kobo: number): string {
   return ngnFormatter.format(kobo / 100);
 }
 
+/** Format an amount stored in hundredth units, keeping its currency explicit. */
+export function formatCurrencyFromMinorUnits(
+  amountMinor: number,
+  currency: string,
+): string {
+  const localeByCurrency: Record<string, string> = {
+    NGN: "en-NG",
+    USD: "en-US",
+  };
+  const locale = localeByCurrency[currency];
+  if (!locale || !Number.isSafeInteger(amountMinor)) {
+    return `${amountMinor} ${currency} minor units`;
+  }
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amountMinor / 100);
+}
+
 export function formatDateTime(iso: string): string {
   return new Intl.DateTimeFormat("en-NG", {
     dateStyle: "medium",

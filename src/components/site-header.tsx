@@ -11,8 +11,8 @@ const links = [
   { href: "/seller", label: "Seller account" },
   { href: "/sign-in", label: "Sign in" },
   { href: "/sign-up", label: "Create account" },
-  { href: "/provider", label: "Provider demo" },
-  { href: "/admin", label: "Admin demo" },
+  { href: "/provider", label: "Provider illustration" },
+  { href: "/admin", label: "Admin tools · restricted" },
 ] as const;
 
 function HeaderShell({

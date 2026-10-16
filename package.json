@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test tests/marketplace-repository.test.ts tests/stripe-readiness.test.ts tests/seller-auth.test.ts",
+    "test": "tsx --test tests/marketplace-repository.test.ts tests/stripe-readiness.test.ts tests/seller-auth.test.ts tests/admin-auth.test.ts tests/admin-dashboard-summary.test.ts",
     "test:db": "tsx --test tests/marketplace-repository.db.test.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:reset-demo": "tsx scripts/db-reset-demo.ts",

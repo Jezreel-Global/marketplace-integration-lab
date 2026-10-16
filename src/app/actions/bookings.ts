@@ -9,6 +9,8 @@ import {
   type RepositoryResult,
 } from "@/lib/marketplace-repository";
 import type { Booking, PaymentAttemptRecord } from "@/types/marketplace";
+import { requireAdmin } from "@/lib/admin-auth";
+import { runAdminMutation } from "@/lib/admin-actions-core";
 
 function revalidateMarketplaceViews(bookingId?: string) {
   revalidatePath("/");
@@ -36,7 +38,9 @@ export async function simulatePaymentAction(
 ): Promise<
   RepositoryResult<{ booking: Booking; attempt: PaymentAttemptRecord }>
 > {
-  const result = await simulatePayment(bookingId, outcome);
+  const result = await runAdminMutation(requireAdmin, () =>
+    simulatePayment(bookingId, outcome),
+  );
   if (!result.ok) return result;
   revalidateMarketplaceViews(result.data.booking.id);
   return result;
@@ -45,7 +49,9 @@ export async function simulatePaymentAction(
 export async function cancelBookingAction(
   bookingId: string,
 ): Promise<RepositoryResult<{ booking: Booking }>> {
-  const result = await cancelRuntimeBooking(bookingId);
+  const result = await runAdminMutation(requireAdmin, () =>
+    cancelRuntimeBooking(bookingId),
+  );
   if (!result.ok) return result;
   revalidateMarketplaceViews(result.data.booking.id);
   return result;

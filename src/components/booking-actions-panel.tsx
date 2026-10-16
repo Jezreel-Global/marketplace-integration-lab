@@ -8,7 +8,11 @@ import {
 } from "@/app/actions/bookings";
 import type { Booking } from "@/types/marketplace";
 
-export function BookingActionsPanel({ booking }: { booking: Booking }) {
+export function BookingActionsPanel({
+  booking,
+}: {
+  booking: Pick<Booking, "id" | "status" | "dataSource">;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +94,7 @@ export function BookingActionsPanel({ booking }: { booking: Booking }) {
         Simulated payment (local demo)
       </h2>
       <p className="mt-2 text-sm text-amber-900/90">
-        These buttons only update the local JSON demo store. They do{" "}
+        These buttons only update the runtime demo store. They do{" "}
         <strong>not</strong> call Stripe or Paystack, authorize cards, or move
         real money. A “success” label is still a simulation.
       </p>
