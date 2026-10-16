@@ -1,4 +1,8 @@
-import type { Booking, PaymentAttemptRecord } from "@/types/marketplace";
+import type {
+  Booking,
+  PaymentAttemptRecord,
+  SellerProfile,
+} from "@/types/marketplace";
 
 /**
  * Persistence port for runtime marketplace data.
@@ -24,6 +28,11 @@ export interface MarketplaceStore {
       attempt?: PaymentAttemptRecord;
     },
   ): Promise<{ booking: Booking; attempt?: PaymentAttemptRecord }>;
+
+  getSellerProfileByClerkUserId(
+    clerkUserId: string,
+  ): Promise<SellerProfile | undefined>;
+  insertSellerProfile(profile: SellerProfile): Promise<SellerProfile>;
 }
 
 export class StoreError extends Error {

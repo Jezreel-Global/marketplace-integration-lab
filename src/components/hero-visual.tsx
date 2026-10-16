@@ -5,7 +5,7 @@ export function HeroVisual() {
       viewBox="0 0 720 420"
       className="h-full w-full"
       role="img"
-      aria-label="Illustration of customers, service providers, and a platform connecting payments"
+      aria-label="Illustration of a marketplace booking flow with simulated payment status"
     >
       <defs>
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
@@ -70,7 +70,7 @@ export function HeroVisual() {
           fontFamily="system-ui,sans-serif"
           fontSize="10"
         >
-          webhooks
+          simulated
         </text>
       </g>
 
@@ -96,7 +96,7 @@ export function HeroVisual() {
           fontFamily="system-ui,sans-serif"
           fontSize="10"
         >
-          book · pay
+          browse · book
         </text>
       </g>
 

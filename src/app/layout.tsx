@@ -44,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </span>{" "}
               — hackathon learning project. Not a production payments platform.
             </p>
-            <p>Milestone 2C · Neon Postgres + simulated payments (no live charges)</p>
+            <p>Milestone 3B · authenticated seller profiles; simulated payments only</p>
           </div>
         </footer>
       </body>

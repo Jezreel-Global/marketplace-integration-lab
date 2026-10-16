@@ -15,6 +15,7 @@ import {
   listAllPaymentAttempts,
 } from "@/lib/marketplace-repository";
 import { getDatabaseUrl } from "@/lib/store/db";
+import { getStripeConnectReadiness } from "@/lib/stripe/config";
 import { formatDateTime, formatNgnFromKobo } from "@/lib/format";
 import type { Booking, BookingStatus, PaymentAttemptRecord } from "@/types/marketplace";
 
@@ -39,6 +40,7 @@ export default async function AdminPage() {
     );
   }
   const databaseConfigured = Boolean(getDatabaseUrl());
+  const stripeReadiness = getStripeConnectReadiness();
   const runtimeCount = bookings.filter((b) => b.dataSource === "mock").length;
 
   const totalGross = bookings.reduce((sum, b) => sum + b.amountKobo, 0);
@@ -89,6 +91,20 @@ export default async function AdminPage() {
           records and booking changes are unavailable.
         </aside>
       ) : null}
+
+      <section
+        className="mt-4 rounded-lg border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-950"
+        aria-labelledby="stripe-readiness-title"
+      >
+        <h2 id="stripe-readiness-title" className="font-semibold">
+          Stripe Connect readiness: {stripeReadiness.label}
+        </h2>
+        <p className="mt-1">{stripeReadiness.message}</p>
+        <p className="mt-1 text-xs">
+          Payment operations: unavailable · Country, currency, and capability
+          eligibility: unverified
+        </p>
+      </section>
 
       <section className="mt-8">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">

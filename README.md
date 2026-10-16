@@ -2,16 +2,18 @@
 
 Hackathon learning app for a fictional Nigerian service marketplace. Browse seed listings, create **runtime** bookings, and run **labelled simulated payments**. No Stripe/Paystack live charges and no real money movement.
 
-**Current milestone: 2C — Vercel deployment readiness (Neon Postgres).**
+**Current milestone: 3B — secure seller identity foundation. Stripe remains disabled and no Stripe API flow is implemented.**
 
-Future learning milestones may explore marketplace provider integrations such as Stripe Connect. This milestone has no provider integration and makes no payment-product eligibility claims.
+This milestone adds only a disabled Stripe Connect readiness guard. It makes no provider API calls or payment-product eligibility claims.
 
 | Milestone | Status in this repo |
 | --- | --- |
 | 1 — Marketplace UI + seed catalog | Done (committed) |
 | 2A — Provider/Admin dashboards | Done (working tree / prior agent) |
 | 2B — Booking persistence + simulated payments | Done (evolved off JSON file) |
-| 2C — Neon Postgres + public-demo hardening | This work |
+| 2C — Neon Postgres + public-demo hardening | Done |
+| 3A — Stripe Connect readiness guard | Account eligibility and payment API flow remain unverified and disabled |
+| 3B — Secure seller identity foundation | Clerk sign-in and separate seller profile; migration not applied |
 
 ## Architecture
 
@@ -24,6 +26,9 @@ src/lib/marketplace-repository.ts
 src/lib/store/           Persistence port
   postgres-adapter.ts    Neon PostgreSQL (runtime path)
   memory-adapter.ts      In-process store for unit tests
+src/lib/stripe/          Server-only readiness validation (no API calls)
+src/lib/seller-auth.ts   Clerk-backed server session identity
+src/lib/seller-profile-service.ts  Seller identity/profile rules
 db/migrations/           Versioned SQL schema
 scripts/                 migrate / reset-demo / optional JSON import
 ```
@@ -44,10 +49,30 @@ Copy `.env.example` to `.env.local` (gitignored):
 | `DEMO_ACCESS_TOKEN` | Recommended on public demos | Optional shared-code gate for `/admin` and `/provider` |
 | `DATABASE_TEST_NON_PRODUCTION` | Only for DB tests | Must be `YES` for a disposable non-production database |
 | `DATABASE_TEST_DATABASE` | Only for DB tests | Exact database name matching the `DATABASE_URL` path |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Optional for seller auth | Clerk development publishable key; public by design |
+| `CLERK_SECRET_KEY` | Optional for seller auth | Clerk development secret; server-only, never prefix with `NEXT_PUBLIC_` |
 
 The CLI scripts and database tests load this ignored `.env.local` through Next.js's environment loader. Keep DB-test confirmations out of Production and Preview deployment settings.
 
-Never prefix these with `NEXT_PUBLIC_`. Never commit real values. Prefer Vercel Deployment Protection for public previews; the demo token gate is only a lightweight shared gate, not authentication. Visitors enter the code at `/demo-access`; it is exchanged for a short-lived HttpOnly cookie and is not put in a URL.
+Never prefix server secrets with `NEXT_PUBLIC_`. The Clerk publishable key is the only public key; keep `CLERK_SECRET_KEY` in ignored `.env.local` and server-side deployment settings. Never commit real values. Prefer Vercel Deployment Protection for public previews; the demo token gate is only a lightweight shared gate, not authentication. Visitors enter the code at `/demo-access`; it is exchanged for a short-lived HttpOnly cookie and is not put in a URL.
+
+## Secure seller identity (Milestone 3B)
+
+Clerk provides real seller sign-up, sign-in, sign-out, and server-verified sessions. The app uses Clerk's stable user ID as seller identity; email addresses and browser-supplied IDs/roles do not establish identity. Seller profiles are stored separately from fictional seed providers in `seller_profiles`. This milestone adds no Stripe account, payout, payment activity, or seed-provider association.
+
+To enable local authentication, create a Clerk development application and place its publishable key in `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and secret key in `CLERK_SECRET_KEY` in ignored `.env.local`. Configure sign-up email verification in Clerk if email sign-up is enabled. Do not paste credentials into chat or expose the secret key to client code. Without both values, seller routes show setup guidance and seller operations fail closed; no successful session is simulated. Public browsing, fictional provider pages, and simulated bookings stay available.
+
+Customers can browse and create simulated bookings without signing in. Seller sign-up and sign-in return to `/seller` to create or view the account-specific profile. That profile does not provide access to the sample provider dashboard; `/provider` and `/admin` remain clearly labelled demo views, not role-protected portals.
+
+Migration `003_seller_profiles.sql` creates the seller-profile table and unique Clerk identity constraint. It is a reviewed migration and is not applied automatically; apply it only after confirming the intended Neon database. Profile persistence also requires `DATABASE_URL`.
+
+## Stripe Connect readiness gate
+
+Milestone 3A adds server-only configuration validation and an admin readiness panel. It does **not** install the Stripe SDK or make Stripe API calls. Stripe Connect is disabled unless STRIPE_CONNECT_ENABLED=true; a test key by itself never enables it. Live secret keys are rejected. The panel never displays credentials and reports country/capability eligibility as unverified even when test credentials are configured.
+
+Configuration variables are STRIPE_CONNECT_ENABLED (defaults to false), STRIPE_SECRET_KEY (test-mode only), and STRIPE_WEBHOOK_SECRET. For local testing, keep actual test credentials in ignored .env.local. In Vercel, configure server-only variables separately under Project Settings → Environment Variables, and leave the flag false in every environment until eligibility is confirmed. Never put Stripe secrets in NEXT_PUBLIC_* variables or commit them. The flag is a readiness setting, not proof of account eligibility or a payment flow.
+
+The existing marketplace uses fictional Nigerian providers and NGN prices. Confirm the platform account country, intended seller countries, Connect capabilities, charge type, and presentment/settlement currencies with Stripe before implementing account creation, onboarding, Checkout, or transfers. Do not infer eligibility from the Nigeria “Extended network” listing or customer payment-method support. Simulated payments remain the only runnable payment flow and never move money.
 
 ## Neon database (Vercel Marketplace) — your dashboard actions
 
@@ -156,7 +181,7 @@ npm run build
 
 ## Security limitations (current)
 
-- No user accounts, CSRF hardening beyond Next defaults, or role-based access.
+- Seller authentication is limited to a minimal profile. The `/provider` and `/admin` routes remain mock/demo dashboards and receive no seller or admin authorization from Clerk.
 - Demo gate is a shared code, not per-user auth. Deployments without `DEMO_ACCESS_TOKEN` leave the dashboards open unless Vercel Deployment Protection is enabled.
 - Customer name/email entered in the demo are stored in Postgres — use fictional values only.
 - A configured but unreachable or unmigrated database makes runtime data views unavailable; restore connectivity or apply migrations before presenting the demo.

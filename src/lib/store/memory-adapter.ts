@@ -1,4 +1,4 @@
-import type { Booking, PaymentAttemptRecord } from "@/types/marketplace";
+import type { Booking, PaymentAttemptRecord, SellerProfile } from "@/types/marketplace";
 import { createProcessLock } from "@/lib/store/process-lock";
 import { StoreError, type MarketplaceStore } from "@/lib/store/types";
 
@@ -7,11 +7,13 @@ export function createMemoryStore(
   seed: {
     bookings?: Booking[];
     paymentAttempts?: PaymentAttemptRecord[];
+    sellerProfiles?: SellerProfile[];
   } = {},
 ): MarketplaceStore {
   const withLock = createProcessLock();
   let bookings = [...(seed.bookings ?? [])];
   let paymentAttempts = [...(seed.paymentAttempts ?? [])];
+  let sellerProfiles = [...(seed.sellerProfiles ?? [])];
 
   return {
     listBookings() {
@@ -46,6 +48,29 @@ export function createMemoryStore(
           paymentAttempts = [...paymentAttempts, attempt];
         }
         return { booking, attempt };
+      });
+    },
+    getSellerProfileByClerkUserId(clerkUserId) {
+      return withLock(async () =>
+        sellerProfiles.find((profile) => profile.clerkUserId === clerkUserId),
+      );
+    },
+    insertSellerProfile(profile) {
+      return withLock(async () => {
+        if (
+          sellerProfiles.some(
+            (existing) =>
+              existing.id === profile.id ||
+              existing.clerkUserId === profile.clerkUserId,
+          )
+        ) {
+          throw new StoreError(
+            "Seller identity is already registered.",
+            "conflict",
+          );
+        }
+        sellerProfiles = [...sellerProfiles, profile];
+        return profile;
       });
     },
   };

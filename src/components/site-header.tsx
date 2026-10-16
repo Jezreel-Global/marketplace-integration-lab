@@ -7,9 +7,12 @@ import { EnvBadge } from "@/components/env-badge";
 import { BRAND } from "@/lib/brand";
 
 const links = [
-  { href: "/", label: "Marketplace" },
-  { href: "/provider", label: "Provider" },
-  { href: "/admin", label: "Admin" },
+  { href: "/#services", label: "Browse services" },
+  { href: "/seller", label: "Seller account" },
+  { href: "/sign-in", label: "Sign in" },
+  { href: "/sign-up", label: "Create account" },
+  { href: "/provider", label: "Provider demo" },
+  { href: "/admin", label: "Admin demo" },
 ] as const;
 
 function HeaderShell({
@@ -33,13 +36,13 @@ function HeaderShell({
           {BRAND.name}
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-1 xl:flex" aria-label="Primary">
           {links.map((link) => {
             const active =
               pathname != null &&
-              (link.href === "/"
+              (link.href === "/#services"
                 ? pathname === "/"
-                : pathname.startsWith(link.href));
+                : pathname === link.href || pathname.startsWith(`${link.href}/`));
             return (
               <Link
                 key={link.href}
@@ -56,13 +59,13 @@ function HeaderShell({
           })}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden xl:block">
           <EnvBadge compact />
         </div>
 
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-md border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] md:hidden"
+          className="inline-flex items-center justify-center rounded-md border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] xl:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={onToggle}
@@ -74,7 +77,7 @@ function HeaderShell({
       {open && (
         <div
           id="mobile-nav"
-          className="border-t border-[var(--color-line)] px-4 py-3 md:hidden"
+          className="border-t border-[var(--color-line)] px-4 py-3 xl:hidden"
         >
           <nav className="flex flex-col gap-1" aria-label="Mobile">
             {links.map((link) => (

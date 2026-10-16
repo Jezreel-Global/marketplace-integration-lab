@@ -117,6 +117,8 @@ describe("marketplace repository (memory store)", () => {
     assert.equal(ok.data.booking.status, "paid");
     assert.equal(ok.data.attempt.status, "succeeded");
     assert.equal(ok.data.attempt.mode, "simulated");
+    assert.equal(ok.data.attempt.provider, "mock");
+    assert.equal(ok.data.attempt.dataSource, "mock");
   });
 
   it("blocks payment of cancelled bookings and invalid transitions", async () => {

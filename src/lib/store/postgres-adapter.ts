@@ -1,5 +1,13 @@
-import { Pool, type PoolClient, type QueryResultRow } from "@neondatabase/serverless";
-import type { Booking, PaymentAttemptRecord } from "@/types/marketplace";
+import {
+  Pool,
+  type PoolClient,
+  type QueryResultRow,
+} from "@neondatabase/serverless";
+import type {
+  Booking,
+  PaymentAttemptRecord,
+  SellerProfile,
+} from "@/types/marketplace";
 import {
   bookingFromRow,
   paymentAttemptFromRow,
@@ -14,6 +22,22 @@ type Queryable = {
     values?: unknown[],
   ): Promise<{ rows: T[] }>;
 };
+
+type SellerProfileRow = QueryResultRow & {
+  id: string;
+  clerk_user_id: string;
+  display_name: string;
+  created_at: Date | string;
+};
+
+function sellerProfileFromRow(row: SellerProfileRow): SellerProfile {
+  return {
+    id: row.id,
+    clerkUserId: row.clerk_user_id,
+    displayName: row.display_name,
+    createdAt: new Date(row.created_at).toISOString(),
+  };
+}
 
 function mapDbError(error: unknown, fallback: string): StoreError {
   if (error instanceof StoreError) return error;
@@ -257,10 +281,37 @@ export function createPostgresStore(pool: Pool): MarketplaceStore {
           return { booking: updated, attempt: savedAttempt };
         });
       } catch (error) {
-        throw mapDbError(
-          error,
-          "Could not update booking in the demo database.",
+        throw mapDbError(error, "Could not update booking in the demo database.");
+      }
+    },
+    async getSellerProfileByClerkUserId(clerkUserId) {
+      try {
+        const result = await pool.query<SellerProfileRow>(
+          `SELECT id, clerk_user_id, display_name, created_at
+           FROM seller_profiles
+           WHERE clerk_user_id = $1
+           LIMIT 1`,
+          [clerkUserId],
         );
+        return result.rows[0]
+          ? sellerProfileFromRow(result.rows[0])
+          : undefined;
+      } catch (error) {
+        throw mapDbError(error, "Could not load the seller profile.");
+      }
+    },
+    async insertSellerProfile(profile) {
+      try {
+        const result = await pool.query<SellerProfileRow>(
+          `INSERT INTO seller_profiles (
+            id, clerk_user_id, display_name, created_at
+          ) VALUES ($1, $2, $3, $4::timestamptz)
+          RETURNING id, clerk_user_id, display_name, created_at`,
+          [profile.id, profile.clerkUserId, profile.displayName, profile.createdAt],
+        );
+        return sellerProfileFromRow(result.rows[0]);
+      } catch (error) {
+        throw mapDbError(error, "Could not save the seller profile.");
       }
     },
   };

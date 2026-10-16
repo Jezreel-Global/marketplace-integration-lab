@@ -49,9 +49,9 @@ function createUnconfiguredStore(): MarketplaceStore {
     async insertBooking() {
       return configError();
     },
-    async updateBooking() {
-      return configError();
-    },
+    async updateBooking() { return configError(); },
+    async getSellerProfileByClerkUserId() { return configError(); },
+    async insertSellerProfile() { return configError(); },
   };
 }
 

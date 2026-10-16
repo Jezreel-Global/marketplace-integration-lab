@@ -40,6 +40,9 @@ export type ProviderCategory =
   | "tech"
   | "wellness";
 
+/** Real seller account, separate from fictional seed providers. */
+export interface SellerProfile { id: string; clerkUserId: string; displayName: string; createdAt: string }
+
 export interface ServiceProvider {
   id: string;
   name: string;

@@ -1,0 +1,7 @@
+/** Check only whether the server-side Clerk integration is configured. */
+export function hasClerkConfiguration(): boolean {
+  return Boolean(
+    process.env["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"]?.trim() &&
+      process.env["CLERK_SECRET_KEY"]?.trim(),
+  );
+}

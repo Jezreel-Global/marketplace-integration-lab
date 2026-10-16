@@ -40,8 +40,32 @@ export default function HomePage({
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <a href="#services" className="btn-primary">
-                Browse services
+                Browse listings
               </a>
+              <Link
+                href="/sign-up"
+                className="rounded-md border border-[var(--color-brand)] px-4 py-2 font-semibold text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand-soft)]"
+              >
+                Become a seller
+              </Link>
+            </div>
+            <p className="mt-4 text-sm text-[var(--color-ink-muted)]">
+              Already have an account?{" "}
+              <Link
+                href="/sign-in"
+                className="font-semibold text-[var(--color-brand)] underline"
+              >
+                Sign in
+              </Link>
+              {" · "}
+              <Link
+                href="/sign-up"
+                className="font-semibold text-[var(--color-brand)] underline"
+              >
+                Create account
+              </Link>
+            </p>
+            <div className="mt-4">
               <EnvBadge compact />
             </div>
           </div>
@@ -95,21 +119,26 @@ export default function HomePage({
             <PaymentModeLegend />
           </div>
 
-          <div className="mt-10 grid gap-6 sm:grid-cols-3">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {[
               {
                 title: "Customer",
-                body: "Browse, book, and track status with visible payment modes.",
+                body: "Browse without an account, book with fictional details, and track a simulated outcome.",
                 href: "#services",
               },
               {
-                title: "Provider",
-                body: "See listings, bookings, and illustrative earnings — never invented payouts.",
+                title: "Seller",
+                body: "Create a Clerk account and seller profile. Seller tools and payouts are not connected.",
+                href: "/sign-up",
+              },
+              {
+                title: "Provider demo",
+                body: "Sample provider bookings only. This is not an authenticated seller portal.",
                 href: "/provider",
               },
               {
-                title: "Admin",
-                body: "Review simulated bookings, fee calculations, and placeholder webhook events.",
+                title: "Admin demo",
+                body: "Inspect seed and simulated records. This page is not role-protected.",
                 href: "/admin",
               },
             ].map((role) => (
@@ -220,7 +249,7 @@ async function DemoGateNotice({
       className="border-b border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-950 sm:px-6"
       role="status"
     >
-      Provider/Admin views are gated on this deployment. Ask the demo host for
+      Provider and admin demo views are gated on this deployment. Ask the demo host for
       the shared code and enter it on <Link href="/demo-access">the demo access
       page</Link>. This is not a login system.
     </div>
