@@ -1,9 +1,10 @@
 import { PLATFORM_FEE_BPS } from "@/lib/brand";
 import { calculatePlatformFee } from "@/lib/fees";
-import { formatNgnFromKobo } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
+import type { Money } from "@/types/marketplace";
 
-export function FeeExplainer({ amountKobo }: { amountKobo: number }) {
-  const fees = calculatePlatformFee(amountKobo);
+export function FeeExplainer({ amount }: { amount: Money }) {
+  const fees = calculatePlatformFee(amount.amountMinor, amount.currency);
 
   return (
     <aside className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
@@ -18,19 +19,19 @@ export function FeeExplainer({ amountKobo }: { amountKobo: number }) {
         <div className="flex justify-between gap-4">
           <dt className="text-[var(--color-ink-muted)]">Customer pays</dt>
           <dd className="font-medium tabular-nums">
-            {formatNgnFromKobo(fees.amountKobo)}
+            {formatMoney(fees.amount)}
           </dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-[var(--color-ink-muted)]">Platform fee</dt>
           <dd className="font-medium tabular-nums">
-            {formatNgnFromKobo(fees.platformFeeKobo)}
+            {formatMoney(fees.platformFee)}
           </dd>
         </div>
         <div className="flex justify-between gap-4 border-t border-[var(--color-line)] pt-2">
           <dt className="text-[var(--color-ink-muted)]">Provider share</dt>
           <dd className="font-semibold tabular-nums text-[var(--color-brand)]">
-            {formatNgnFromKobo(fees.providerShareKobo)}
+            {formatMoney(fees.providerShare)}
           </dd>
         </div>
       </dl>

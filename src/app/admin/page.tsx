@@ -23,8 +23,8 @@ import {
 } from "@/lib/admin-dashboard-summary";
 import { getStripeConnectReadiness } from "@/lib/stripe/config";
 import {
-  formatCurrencyFromMinorUnits,
   formatDateTime,
+  formatMoney,
 } from "@/lib/format";
 import type { Booking, PaymentAttemptRecord } from "@/types/marketplace";
 
@@ -196,7 +196,7 @@ export default async function AdminPage() {
                       Gross
                     </dt>
                     <dd className="mt-1 font-semibold tabular-nums">
-                      {formatCurrencyFromMinorUnits(group.grossKobo, group.currency)}
+                      {formatMoney(group.gross)}
                     </dd>
                   </div>
                   <div>
@@ -204,7 +204,7 @@ export default async function AdminPage() {
                       Platform share
                     </dt>
                     <dd className="mt-1 font-semibold tabular-nums">
-                      {formatCurrencyFromMinorUnits(group.platformFeesKobo, group.currency)}
+                      {formatMoney(group.platformFees)}
                     </dd>
                   </div>
                   <div>
@@ -212,7 +212,7 @@ export default async function AdminPage() {
                       Provider share
                     </dt>
                     <dd className="mt-1 font-semibold tabular-nums text-[var(--color-brand)]">
-                      {formatCurrencyFromMinorUnits(group.providerShareKobo, group.currency)}
+                      {formatMoney(group.providerShare)}
                     </dd>
                   </div>
                 </dl>
@@ -263,9 +263,9 @@ export default async function AdminPage() {
                           {booking.customerName}
                         </p>
                         <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-                          {formatCurrencyFromMinorUnits(booking.amountKobo, booking.currency)} · fee{" "}
-                          {formatCurrencyFromMinorUnits(booking.platformFeeKobo, booking.currency)} · provider{" "}
-                          {formatCurrencyFromMinorUnits(booking.providerShareKobo, booking.currency)} · created{" "}
+                          {formatMoney(booking.amount)} · fee{" "}
+                          {formatMoney(booking.platformFee)} · provider{" "}
+                          {formatMoney(booking.providerShare)} · created{" "}
                           {formatDateTime(booking.createdAt)}
                         </p>
                         <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
@@ -323,7 +323,7 @@ export default async function AdminPage() {
                           {attempt.bookingId}
                         </Link>{" "}
                         · provider={attempt.provider} ·{" "}
-                        {formatCurrencyFromMinorUnits(attempt.amountKobo, attempt.currency)} ·{" "}
+                        {formatMoney(attempt.amount)} ·{" "}
                         {formatDateTime(attempt.createdAt)}
                       </p>
                       <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
@@ -343,8 +343,8 @@ export default async function AdminPage() {
           Webhook event feed
         </h2>
         <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-          Placeholder rows only. This feed does not receive or verify real provider
-          events.
+          Illustrative placeholder rows only. This feed does not receive or
+          verify real provider events.
         </p>
         <ul className="mt-4 space-y-3">
           {webhookEvents.map((event) => (

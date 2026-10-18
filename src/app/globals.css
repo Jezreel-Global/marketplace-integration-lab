@@ -130,3 +130,191 @@ body::before {
 .rise-in-delay-2 {
   animation: rise-in 0.7s ease-out 0.24s both;
 }
+
+/* The Demo Studio is a self-contained product workspace. */
+body:has(#demo-studio-shell) > header,
+body:has(#demo-studio-shell) > footer {
+  display: none;
+}
+
+/* Furever dashboard presentation tokens, scoped to the browser-only studio. */
+.demo-studio-shell {
+  --color-canvas: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-ink: #353a44;
+  --color-ink-muted: #596171;
+  --color-brand: #27ae60;
+  --color-brand-soft: #e9f7ef;
+  --color-accent: #27ae60;
+  --color-line: #d8dde3;
+  --font-display: var(--font-body);
+  min-height: 100vh;
+  color: var(--color-ink);
+  font-family: var(--font-body), Arial, sans-serif;
+  background: var(--color-canvas);
+}
+
+.demo-studio-shell .demo-main {
+  background-color: var(--color-canvas);
+  background-image: url("/furever-demo/patterns/pattern.png");
+  background-position: top left;
+  background-repeat: repeat;
+  background-size: 426px;
+}
+
+.demo-studio-shell .demo-sidebar,
+.demo-studio-shell .demo-topbar {
+  border-color: var(--color-line);
+}
+
+.demo-studio-shell .demo-sidebar {
+  box-shadow: 0 1px 2px rgb(35 42 53 / 3%);
+}
+
+.demo-studio-shell .demo-logo {
+  border-radius: 0.55rem;
+  background: var(--color-brand);
+}
+
+.demo-studio-shell .demo-nav-heading {
+  color: #7a8494;
+}
+
+.demo-studio-shell .demo-nav-divider {
+  margin-top: 0.7rem;
+  padding-top: 1.1rem;
+}
+
+.demo-studio-shell .demo-nav-item {
+  border-radius: 0.5rem;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.demo-studio-shell .demo-nav-item[aria-current="page"] {
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+  font-weight: 600;
+}
+
+.demo-studio-shell .demo-nav-item:not([aria-current="page"]):hover {
+  background: #f5f6f8;
+}
+
+.demo-studio-shell .demo-configure-button {
+  background: linear-gradient(105deg, #7062ff, #685df3);
+  box-shadow: 0 7px 18px rgb(104 93 243 / 28%);
+  transition: filter 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+
+.demo-studio-shell .demo-configure-button:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 9px 22px rgb(104 93 243 / 34%);
+}
+
+.demo-studio-shell .demo-configure-button:active {
+  transform: translateY(1px);
+}
+
+.demo-studio-shell .demo-disclosure {
+  border-color: #f3d88c;
+}
+
+.demo-studio-shell .demo-requirements-banner {
+  box-shadow: 0 1px 2px rgb(35 42 53 / 4%);
+}
+
+.demo-studio-shell .demo-payments-table thead {
+  border-bottom: 1px solid var(--color-line);
+  color: #687181;
+  font-size: 0.72rem;
+  letter-spacing: 0.035em;
+}
+
+.demo-studio-shell .demo-payments-table th {
+  padding: 0.9rem 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.demo-studio-shell .demo-payments-table tbody tr {
+  border-bottom: 1px solid #e0e3e7;
+}
+
+.demo-studio-shell .demo-payments-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.demo-studio-shell .demo-payments-table td {
+  padding: 0.9rem 1rem;
+  white-space: nowrap;
+}
+
+.demo-studio-shell .demo-panel {
+  border-color: var(--color-line);
+  box-shadow: 0 1px 3px rgb(35 42 53 / 5%);
+}
+
+.demo-studio-shell .demo-status {
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.4rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.demo-studio-shell .demo-status-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.demo-studio-shell .demo-status[data-outcome="success"] {
+  border-color: #94d5af;
+  background: #d6fce6;
+  color: #1e884b;
+}
+
+.demo-studio-shell .demo-status[data-outcome="pending"] {
+  border-color: #f2d88d;
+  background: #fff5d6;
+  color: #8c6712;
+}
+
+.demo-studio-shell .demo-status[data-outcome="failure"] {
+  border-color: #efb4ae;
+  background: #ffe8e5;
+  color: #a1352b;
+}
+
+.demo-studio-shell .rounded-xl {
+  border-radius: 0.6rem;
+}
+
+.demo-studio-shell .shadow-sm {
+  box-shadow: 0 1px 3px rgb(35 42 53 / 5%);
+}
+
+.demo-studio-shell .focus-ring:focus-visible {
+  outline: 2px solid #27ae60;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1023px) {
+  .demo-studio-shell .demo-main {
+    background-size: 300px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-studio-shell *,
+  .demo-studio-shell *::before,
+  .demo-studio-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

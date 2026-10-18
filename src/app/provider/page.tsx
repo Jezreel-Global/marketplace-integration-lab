@@ -14,13 +14,17 @@ import {
   listingsForProvider,
   providers,
 } from "@/data/seed";
-import { formatDateTime, formatNgnFromKobo } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
+import { sumMoney } from "@/lib/money";
 
 export default function ProviderPage() {
   const sampleBookings = seedBookings;
-  const illustrativePaidShare = sampleBookings
-    .filter((b) => b.status === "paid")
-    .reduce((sum, b) => sum + b.providerShareKobo, 0);
+  const illustrativePaidShare = sumMoney(
+    sampleBookings
+      .filter((b) => b.status === "paid")
+      .map((booking) => booking.providerShare),
+    "NGN",
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
@@ -75,7 +79,7 @@ export default function ProviderPage() {
             Paid share (seed + simulated)
           </dt>
           <dd className="mt-1 text-2xl font-semibold tabular-nums text-[var(--color-brand)]">
-            {formatNgnFromKobo(illustrativePaidShare)}
+            {formatMoney(illustrativePaidShare)}
           </dd>
         </div>
       </dl>
@@ -86,9 +90,12 @@ export default function ProviderPage() {
           const providerBookings = sampleBookings.filter(
             (b) => b.providerId === provider.id,
           );
-          const paidShare = providerBookings
-            .filter((b) => b.status === "paid")
-            .reduce((sum, b) => sum + b.providerShareKobo, 0);
+          const paidShare = sumMoney(
+            providerBookings
+              .filter((booking) => booking.status === "paid")
+              .map((booking) => booking.providerShare),
+            "NGN",
+          );
 
           return (
             <section
@@ -121,7 +128,7 @@ export default function ProviderPage() {
                     Paid share (illustrative)
                   </p>
                   <p className="mt-1 text-lg font-semibold tabular-nums">
-                    {formatNgnFromKobo(paidShare)}
+                    {formatMoney(paidShare)}
                   </p>
                   <p className="mt-1 text-xs uppercase tracking-wide text-amber-800">
                     Payout: {provider.payoutStatus.replaceAll("_", " ")}
@@ -151,7 +158,7 @@ export default function ProviderPage() {
                           {listing.title}
                         </Link>
                         <span className="tabular-nums text-sm font-semibold">
-                          {formatNgnFromKobo(listing.priceKobo)}
+                          {formatMoney(listing.price)}
                         </span>
                       </li>
                     ))}
@@ -195,11 +202,11 @@ export default function ProviderPage() {
                             Scheduled {formatDateTime(booking.scheduledFor)} ·
                             Customer pays{" "}
                             <span className="font-medium tabular-nums text-[var(--color-ink)]">
-                              {formatNgnFromKobo(booking.amountKobo)}
+                              {formatMoney(booking.amount)}
                             </span>{" "}
                             · Provider share{" "}
                             <span className="font-medium tabular-nums text-[var(--color-ink)]">
-                              {formatNgnFromKobo(booking.providerShareKobo)}
+                              {formatMoney(booking.providerShare)}
                             </span>
                           </p>
                           <p className="mt-2 text-sm text-[var(--color-ink-muted)]">

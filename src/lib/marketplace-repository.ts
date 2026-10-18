@@ -6,6 +6,10 @@ import {
 } from "@/data/seed";
 import { calculatePlatformFee } from "@/lib/fees";
 import {
+  assertBookingMoneyConsistency,
+  assertPaymentAmountMatchesBooking,
+} from "@/lib/money";
+import {
   getMarketplaceStore,
   publicStoreErrorMessage,
   StoreError,
@@ -14,6 +18,7 @@ import type {
   Booking,
   PaymentAttemptRecord,
   PaymentAttemptStatus,
+  SellerListing,
 } from "@/types/marketplace";
 
 export type RepositoryResult<T> =
@@ -59,8 +64,7 @@ function validateCreateInput(
 
   const listingId =
     typeof input.listingId === "string" ? input.listingId.trim() : "";
-  const listing = getListing(listingId);
-  if (!listing) {
+  if (!listingId || listingId.length > 160) {
     return {
       ok: false,
       error: "Unknown listing. Choose a service from the marketplace.",
@@ -94,7 +98,7 @@ function validateCreateInput(
 
   return {
     ok: true,
-    data: { listingId: listing.id, name, email, when },
+    data: { listingId, name, email, when },
   };
 }
 
@@ -168,23 +172,40 @@ export async function createBooking(
   if (!validated.ok) return validated;
 
   const listing = getListing(validated.data.listingId);
+  let sellerListing: SellerListing | undefined;
   if (!listing) {
+    try {
+      sellerListing = await getMarketplaceStore().getPublishedSellerListingById(
+        validated.data.listingId,
+      );
+    } catch (error) {
+      return fail(error);
+    }
+  }
+  if (!listing && !sellerListing) {
     return { ok: false, error: "Unknown listing." };
   }
 
-  const fees = calculatePlatformFee(listing.priceKobo);
+  const price = listing?.price ?? sellerListing!.price;
+  const fees = calculatePlatformFee(price.amountMinor, price.currency);
+  assertBookingMoneyConsistency(
+    fees.amount,
+    fees.platformFee,
+    fees.providerShare,
+  );
   const now = new Date().toISOString();
   const booking: Booking = {
     id: newBookingId(),
-    listingId: listing.id,
-    providerId: listing.providerId,
+    listingId: listing?.id ?? sellerListing!.id,
+    sellerListingId: sellerListing?.id ?? null,
+    // Real seller listings use their existing seller profile ID as provider identity.
+    providerId: listing?.providerId ?? sellerListing!.sellerProfileId,
     customerName: validated.data.name,
     customerEmail: validated.data.email,
     scheduledFor: validated.data.when,
-    amountKobo: fees.amountKobo,
-    currency: "NGN",
-    platformFeeKobo: fees.platformFeeKobo,
-    providerShareKobo: fees.providerShareKobo,
+    amount: fees.amount,
+    platformFee: fees.platformFee,
+    providerShare: fees.providerShare,
     status: "pending_payment",
     paymentMode: "simulated",
     paymentAttemptStatus: "not_started",
@@ -253,8 +274,7 @@ export async function simulatePayment(
         provider: "mock",
         mode: "simulated",
         status: attemptStatus,
-        amountKobo: booking.amountKobo,
-        currency: "NGN",
+        amount: { ...booking.amount },
         dataSource: "mock",
         note:
           outcome === "success"
@@ -262,6 +282,8 @@ export async function simulatePayment(
             : "Labelled simulated failure in Neon Postgres. No provider was contacted.",
         createdAt: now,
       };
+
+      assertPaymentAmountMatchesBooking(attempt.amount, booking.amount);
 
       const updated: Booking = {
         ...booking,

@@ -18,6 +18,21 @@ neonConfig.webSocketConstructor = ws;
 type JsonBooking = Record<string, unknown>;
 type JsonAttempt = Record<string, unknown>;
 
+/** Version 1 import files use explicitly NGN-denominated legacy kobo fields. */
+function legacyNgnKobo(value: unknown, currency: unknown): number {
+  if (currency !== undefined && currency !== "NGN") {
+    throw new Error("The version 1 demo-store import format supports NGN/kobo only.");
+  }
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < 0
+  ) {
+    throw new Error("Legacy kobo values must be non-negative safe integers.");
+  }
+  return value;
+}
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) {
@@ -48,10 +63,12 @@ async function main() {
       await client.query(
         `INSERT INTO runtime_bookings (
           id, listing_id, provider_id, customer_name, customer_email,
-          scheduled_for, amount_kobo, currency, platform_fee_kobo, provider_share_kobo,
+          scheduled_for, amount_minor, amount_kobo, currency,
+          platform_fee_minor, platform_fee_kobo, provider_share_minor, provider_share_kobo,
           status, payment_mode, payment_attempt_status, data_source, created_at, status_note
         ) VALUES (
-          $1,$2,$3,$4,$5,$6::timestamptz,$7,$8,$9,$10,$11,$12,$13,$14,$15::timestamptz,$16
+          $1,$2,$3,$4,$5,$6::timestamptz,$7,$8,$9,$10,$11,$12,$13,
+          $14,$15,$16,$17,$18::timestamptz,$19
         )
         ON CONFLICT (id) DO NOTHING`,
         [
@@ -61,10 +78,13 @@ async function main() {
           b.customerName,
           b.customerEmail,
           b.scheduledFor,
-          b.amountKobo,
-          b.currency ?? "NGN",
-          b.platformFeeKobo,
-          b.providerShareKobo,
+          legacyNgnKobo(b.amountKobo, b.currency),
+          legacyNgnKobo(b.amountKobo, b.currency),
+          "NGN",
+          legacyNgnKobo(b.platformFeeKobo, b.currency),
+          legacyNgnKobo(b.platformFeeKobo, b.currency),
+          legacyNgnKobo(b.providerShareKobo, b.currency),
+          legacyNgnKobo(b.providerShareKobo, b.currency),
           b.status,
           b.paymentMode,
           b.paymentAttemptStatus,
@@ -79,9 +99,9 @@ async function main() {
       await client.query(
         `INSERT INTO runtime_payment_attempts (
           id, booking_id, provider, mode, status,
-          amount_kobo, currency, data_source, note, created_at
+          amount_minor, amount_kobo, currency, data_source, note, created_at
         ) VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10::timestamptz
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::timestamptz
         )
         ON CONFLICT (id) DO NOTHING`,
         [
@@ -90,8 +110,9 @@ async function main() {
           a.provider,
           a.mode,
           a.status,
-          a.amountKobo,
-          a.currency ?? "NGN",
+          legacyNgnKobo(a.amountKobo, a.currency),
+          legacyNgnKobo(a.amountKobo, a.currency),
+          "NGN",
           a.dataSource ?? "mock",
           a.note,
           a.createdAt,

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { BookingForm } from "@/components/booking-form";
 import { DataSourceBadge } from "@/components/status-badge";
 import { bookings as seedBookings, categoryLabels, getListing, getProvider } from "@/data/seed";
-import { formatDuration, formatNgnFromKobo } from "@/lib/format";
+import { formatDuration, formatMoney } from "@/lib/format";
 
 export default async function ListingPage({
   params,
@@ -48,7 +48,7 @@ export default async function ListingPage({
                 Price
               </dt>
               <dd className="mt-1 text-2xl font-semibold tabular-nums">
-                {formatNgnFromKobo(listing.priceKobo)}
+                {formatMoney(listing.price)}
               </dd>
             </div>
             <div>
@@ -102,7 +102,7 @@ export default async function ListingPage({
           <div className="mt-5">
             <BookingForm
               listingId={listing.id}
-              priceKobo={listing.priceKobo}
+              price={listing.price}
               sampleBookingId={sampleBooking?.id ?? "book_pending_demo"}
             />
           </div>

@@ -13,8 +13,19 @@ import {
   paymentAttemptFromRow,
   type BookingRow,
   type PaymentAttemptRow,
+  sellerListingFromRow,
+  type SellerListingRow,
 } from "@/lib/store/row-mappers";
 import { StoreError, type MarketplaceStore } from "@/lib/store/types";
+import {
+  assertBookingMoneyConsistency,
+  assertPaymentAmountMatchesBooking,
+  moneyToLegacyNgnKobo,
+} from "@/lib/money";
+
+function legacyKoboOrNull(money: Booking["amount"]): number | null {
+  return money.currency === "NGN" ? moneyToLegacyNgnKobo(money) : null;
+}
 
 type Queryable = {
   query<T extends QueryResultRow = QueryResultRow>(
@@ -73,28 +84,38 @@ async function insertBookingQuery(
   db: Queryable,
   booking: Booking,
 ): Promise<Booking> {
+  assertBookingMoneyConsistency(
+    booking.amount,
+    booking.platformFee,
+    booking.providerShare,
+  );
   const result = await db.query<BookingRow>(
     `INSERT INTO runtime_bookings (
-      id, listing_id, provider_id, customer_name, customer_email,
-      scheduled_for, amount_kobo, currency, platform_fee_kobo, provider_share_kobo,
+      id, listing_id, seller_listing_id, provider_id, customer_name, customer_email,
+      scheduled_for, amount_minor, amount_kobo, currency,
+      platform_fee_minor, platform_fee_kobo, provider_share_minor, provider_share_kobo,
       status, payment_mode, payment_attempt_status, data_source, created_at, status_note
     ) VALUES (
-      $1, $2, $3, $4, $5,
-      $6::timestamptz, $7, $8, $9, $10,
-      $11, $12, $13, $14, $15::timestamptz, $16
+      $1, $2, $3, $4, $5, $6, $7::timestamptz,
+      $8, $9, $10, $11, $12, $13, $14,
+      $15, $16, $17, $18, $19::timestamptz, $20
     )
     RETURNING *`,
     [
       booking.id,
       booking.listingId,
+      booking.sellerListingId ?? null,
       booking.providerId,
       booking.customerName,
       booking.customerEmail,
       booking.scheduledFor,
-      booking.amountKobo,
-      booking.currency,
-      booking.platformFeeKobo,
-      booking.providerShareKobo,
+      booking.amount.amountMinor,
+      legacyKoboOrNull(booking.amount),
+      booking.amount.currency,
+      booking.platformFee.amountMinor,
+      legacyKoboOrNull(booking.platformFee),
+      booking.providerShare.amountMinor,
+      legacyKoboOrNull(booking.providerShare),
       booking.status,
       booking.paymentMode,
       booking.paymentAttemptStatus,
@@ -113,10 +134,10 @@ async function insertAttemptQuery(
   const result = await db.query<PaymentAttemptRow>(
     `INSERT INTO runtime_payment_attempts (
       id, booking_id, provider, mode, status,
-      amount_kobo, currency, data_source, note, created_at
+      amount_minor, amount_kobo, currency, data_source, note, created_at
     ) VALUES (
       $1, $2, $3, $4, $5,
-      $6, $7, $8, $9, $10::timestamptz
+      $6, $7, $8, $9, $10, $11::timestamptz
     )
     RETURNING *`,
     [
@@ -125,8 +146,9 @@ async function insertAttemptQuery(
       attempt.provider,
       attempt.mode,
       attempt.status,
-      attempt.amountKobo,
-      attempt.currency,
+      attempt.amount.amountMinor,
+      legacyKoboOrNull(attempt.amount),
+      attempt.amount.currency,
       attempt.dataSource,
       attempt.note,
       attempt.createdAt,
@@ -139,36 +161,49 @@ async function updateBookingRowQuery(
   db: Queryable,
   booking: Booking,
 ): Promise<Booking> {
+  assertBookingMoneyConsistency(
+    booking.amount,
+    booking.platformFee,
+    booking.providerShare,
+  );
   const result = await db.query<BookingRow>(
     `UPDATE runtime_bookings SET
-      listing_id = $2,
-      provider_id = $3,
-      customer_name = $4,
-      customer_email = $5,
-      scheduled_for = $6::timestamptz,
-      amount_kobo = $7,
-      currency = $8,
-      platform_fee_kobo = $9,
-      provider_share_kobo = $10,
-      status = $11,
-      payment_mode = $12,
-      payment_attempt_status = $13,
-      data_source = $14,
-      status_note = $15,
+      listing_id = $3,
+      seller_listing_id = $2,
+      provider_id = $4,
+      customer_name = $5,
+      customer_email = $6,
+      scheduled_for = $7::timestamptz,
+      amount_minor = $8,
+      amount_kobo = $9,
+      currency = $10,
+      platform_fee_minor = $11,
+      platform_fee_kobo = $12,
+      provider_share_minor = $13,
+      provider_share_kobo = $14,
+      status = $15,
+      payment_mode = $16,
+      payment_attempt_status = $17,
+      data_source = $18,
+      status_note = $19,
       updated_at = now()
      WHERE id = $1
      RETURNING *`,
     [
       booking.id,
+      booking.sellerListingId ?? null,
       booking.listingId,
       booking.providerId,
       booking.customerName,
       booking.customerEmail,
       booking.scheduledFor,
-      booking.amountKobo,
-      booking.currency,
-      booking.platformFeeKobo,
-      booking.providerShareKobo,
+      booking.amount.amountMinor,
+      legacyKoboOrNull(booking.amount),
+      booking.amount.currency,
+      booking.platformFee.amountMinor,
+      legacyKoboOrNull(booking.platformFee),
+      booking.providerShare.amountMinor,
+      legacyKoboOrNull(booking.providerShare),
       booking.status,
       booking.paymentMode,
       booking.paymentAttemptStatus,
@@ -189,6 +224,9 @@ async function withTransaction<T>(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await client.query(
+      "SELECT set_config('marketplace.currency_aware_money_write', 'true', true)",
+    );
     const result = await fn(client);
     await client.query("COMMIT");
     return result;
@@ -243,7 +281,9 @@ export function createPostgresStore(pool: Pool): MarketplaceStore {
 
     async insertBooking(booking) {
       try {
-        return await insertBookingQuery(pool, booking);
+        return await withTransaction(pool, (client) =>
+          insertBookingQuery(client, booking),
+        );
       } catch (error) {
         throw mapDbError(error, "Could not save booking to the demo database.");
       }
@@ -276,6 +316,7 @@ export function createPostgresStore(pool: Pool): MarketplaceStore {
                 "conflict",
               );
             }
+            assertPaymentAmountMatchesBooking(attempt.amount, booking.amount);
             savedAttempt = await insertAttemptQuery(client, attempt);
           }
           return { booking: updated, attempt: savedAttempt };
@@ -312,6 +353,87 @@ export function createPostgresStore(pool: Pool): MarketplaceStore {
         return sellerProfileFromRow(result.rows[0]);
       } catch (error) {
         throw mapDbError(error, "Could not save the seller profile.");
+      }
+    },
+    async listSellerListingsForClerkUserId(clerkUserId) {
+      try {
+        const result = await pool.query<SellerListingRow>(
+          `SELECT listings.*
+           FROM seller_listings AS listings
+           JOIN seller_profiles AS profiles
+             ON profiles.id = listings.seller_profile_id
+           WHERE profiles.clerk_user_id = $1
+           ORDER BY listings.updated_at DESC`,
+          [clerkUserId],
+        );
+        return result.rows.map(sellerListingFromRow);
+      } catch (error) {
+        throw mapDbError(error, "Could not load seller listings.");
+      }
+    },
+    async listPublishedSellerListings() {
+      try {
+        const result = await pool.query<SellerListingRow>(
+          `SELECT * FROM seller_listings
+           WHERE status = 'published'
+           ORDER BY updated_at DESC`,
+        );
+        return result.rows.map(sellerListingFromRow);
+      } catch (error) {
+        throw mapDbError(error, "Could not load published seller listings.");
+      }
+    },
+    async getPublishedSellerListingById(id) {
+      try {
+        const result = await pool.query<SellerListingRow>(
+          `SELECT * FROM seller_listings
+           WHERE id = $1 AND status = 'published'
+           LIMIT 1`,
+          [id],
+        );
+        return result.rows[0] ? sellerListingFromRow(result.rows[0]) : undefined;
+      } catch (error) {
+        throw mapDbError(error, "Could not load the seller listing.");
+      }
+    },
+    async insertSellerListingForClerkUserId(clerkUserId, listing) {
+      try {
+        if (
+          listing.price.currency !== "USD" ||
+          !Number.isSafeInteger(listing.price.amountMinor) ||
+          listing.price.amountMinor <= 0
+        ) {
+          throw new StoreError("Seller listings must have a valid positive USD price.");
+        }
+        const result = await pool.query<SellerListingRow>(
+          `INSERT INTO seller_listings (
+            id, seller_profile_id, title, description, price_minor, currency,
+            duration_minutes, availability_note, status, created_at, updated_at
+          )
+          SELECT $1, profile.id, $3, $4, $5, 'USD', $6, $7, $8,
+                 $9::timestamptz, $10::timestamptz
+          FROM seller_profiles AS profile
+          WHERE profile.clerk_user_id = $2
+          RETURNING *`,
+          [
+            listing.id,
+            clerkUserId,
+            listing.title,
+            listing.description,
+            listing.price.amountMinor,
+            listing.durationMinutes,
+            listing.availabilityNote,
+            listing.status,
+            listing.createdAt,
+            listing.updatedAt,
+          ],
+        );
+        if (!result.rows[0]) {
+          throw new StoreError("Seller profile not found.", "not_found");
+        }
+        return sellerListingFromRow(result.rows[0]);
+      } catch (error) {
+        throw mapDbError(error, "Could not save seller listing.");
       }
     },
   };

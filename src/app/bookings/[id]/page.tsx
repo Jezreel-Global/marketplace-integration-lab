@@ -19,7 +19,7 @@ import {
   getBookingById,
   listPaymentAttemptsForBooking,
 } from "@/lib/marketplace-repository";
-import { formatDateTime, formatNgnFromKobo } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import type { Booking, PaymentAttemptRecord } from "@/types/marketplace";
 
 export default async function BookingPage({
@@ -133,7 +133,7 @@ export default async function BookingPage({
             Amount
           </dt>
           <dd className="mt-1 text-lg font-semibold tabular-nums">
-            {formatNgnFromKobo(displayBooking.amountKobo)}
+            {formatMoney(displayBooking.amount)}
           </dd>
         </div>
         {isAdmin && booking.dataSource === "mock" ? (
@@ -181,7 +181,7 @@ export default async function BookingPage({
       </dl>
 
       <div className="mt-8">
-        <FeeExplainer amountKobo={displayBooking.amountKobo} />
+        <FeeExplainer amount={displayBooking.amount} />
       </div>
 
       <BookingActionsPanel

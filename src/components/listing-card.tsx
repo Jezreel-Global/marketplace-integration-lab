@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { categoryLabels } from "@/data/seed";
-import { formatDuration, formatNgnFromKobo } from "@/lib/format";
+import { formatDuration, formatMoney } from "@/lib/format";
 import type { Listing, ServiceProvider } from "@/types/marketplace";
 
 export function ListingCard({
@@ -30,7 +30,7 @@ export function ListingCard({
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
         <span className="font-semibold tabular-nums text-[var(--color-ink)]">
-          {formatNgnFromKobo(listing.priceKobo)}
+          {formatMoney(listing.price)}
         </span>
         <span className="text-[var(--color-ink-muted)]">
           {formatDuration(listing.durationMinutes)}

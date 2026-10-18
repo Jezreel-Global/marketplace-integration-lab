@@ -1,6 +1,7 @@
 import type {
   Booking,
   PaymentAttemptRecord,
+  SellerListing,
   SellerProfile,
 } from "@/types/marketplace";
 
@@ -33,6 +34,14 @@ export interface MarketplaceStore {
     clerkUserId: string,
   ): Promise<SellerProfile | undefined>;
   insertSellerProfile(profile: SellerProfile): Promise<SellerProfile>;
+
+  listSellerListingsForClerkUserId(clerkUserId: string): Promise<SellerListing[]>;
+  listPublishedSellerListings(): Promise<SellerListing[]>;
+  getPublishedSellerListingById(id: string): Promise<SellerListing | undefined>;
+  insertSellerListingForClerkUserId(
+    clerkUserId: string,
+    listing: Omit<SellerListing, "sellerProfileId">,
+  ): Promise<SellerListing>;
 }
 
 export class StoreError extends Error {

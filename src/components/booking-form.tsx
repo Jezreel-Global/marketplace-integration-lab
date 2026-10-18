@@ -4,15 +4,16 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createBookingAction } from "@/app/actions/bookings";
 import { FeeExplainer } from "@/components/fee-explainer";
-import { formatNgnFromKobo } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
+import type { Money } from "@/types/marketplace";
 
 export function BookingForm({
   listingId,
-  priceKobo,
+  price,
   sampleBookingId,
 }: {
   listingId: string;
-  priceKobo: number;
+  price: Money;
   sampleBookingId?: string;
 }) {
   const router = useRouter();
@@ -164,7 +165,7 @@ export function BookingForm({
         </div>
       </fieldset>
 
-      <FeeExplainer amountKobo={priceKobo} />
+      <FeeExplainer amount={price} />
 
       {error && (
         <p className="text-sm text-rose-800" role="alert">
@@ -179,7 +180,7 @@ export function BookingForm({
       >
         {pending
           ? "Saving booking…"
-          : `Continue · ${formatNgnFromKobo(priceKobo)}`}
+          : `Continue · ${formatMoney(price)}`}
       </button>
       <p className="text-xs text-[var(--color-ink-muted)]">
         We never collect card numbers in this app. Fees are calculated on the

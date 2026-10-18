@@ -4,7 +4,7 @@ export function EnvBadge({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className={`inline-flex items-center gap-2 rounded-md border border-amber-300/80 bg-amber-50 text-amber-950 ${
-        compact ? "px-2 py-0.5 text-xs" : "px-3 py-1.5 text-sm"
+        compact ? "whitespace-nowrap px-2 py-0.5 text-xs" : "px-3 py-1.5 text-sm"
       }`}
       role="status"
     >

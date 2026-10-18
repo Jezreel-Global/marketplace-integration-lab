@@ -1,34 +1,47 @@
-const ngnFormatter = new Intl.NumberFormat("en-NG", {
-  style: "currency",
-  currency: "NGN",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
+import { assertMoney } from "@/lib/money";
+import type { Money } from "@/types/marketplace";
 
-/** Format kobo amounts as Naira for display. */
-export function formatNgnFromKobo(kobo: number): string {
-  return ngnFormatter.format(kobo / 100);
-}
-
-/** Format an amount stored in hundredth units, keeping its currency explicit. */
-export function formatCurrencyFromMinorUnits(
-  amountMinor: number,
-  currency: string,
-): string {
-  const localeByCurrency: Record<string, string> = {
-    NGN: "en-NG",
-    USD: "en-US",
-  };
-  const locale = localeByCurrency[currency];
-  if (!locale || !Number.isSafeInteger(amountMinor)) {
-    return `${amountMinor} ${currency} minor units`;
-  }
-  return new Intl.NumberFormat(locale, {
+/** Format supported NGN/kobo or USD/cent money without inferring its currency. */
+export function formatMoney(money: Money): string {
+  assertMoney(money);
+  const locale = money.currency === "NGN" ? "en-NG" : "en-US";
+  const majorUnits = BigInt(money.amountMinor) / BigInt(100);
+  const fractionalUnits = money.amountMinor % 100;
+  const wholeParts = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 0,
+  }).formatToParts(majorUnits);
+  const currencyParts = new Intl.NumberFormat(locale, {
     style: "currency",
-    currency,
+    currency: money.currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amountMinor / 100);
+    maximumFractionDigits: 0,
+  }).formatToParts(BigInt(0));
+  const fractionParts =
+    fractionalUnits === 0
+      ? []
+      : new Intl.NumberFormat(locale, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+          useGrouping: false,
+        })
+          .formatToParts(fractionalUnits / 100)
+          .filter((part) => part.type === "decimal" || part.type === "fraction");
+  const integerPartIndex = currencyParts.findIndex(
+    (part) => part.type === "integer",
+  );
+
+  return currencyParts
+    .flatMap((part, index) => {
+      if (part.type === "integer") {
+        return [
+          ...wholeParts,
+          ...(index === integerPartIndex ? fractionParts : []),
+        ];
+      }
+      return part.type === "group" ? [] : [part];
+    })
+    .map((part) => part.value)
+    .join("");
 }
 
 export function formatDateTime(iso: string): string {

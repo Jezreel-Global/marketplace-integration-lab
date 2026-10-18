@@ -1,18 +1,21 @@
 import type {
   Booking,
   BookingStatus,
+  Currency,
   DataSource,
+  Money,
   PaymentAttemptRecord,
 } from "@/types/marketplace";
+import { assertBookingMoneyConsistency, sumMoney } from "@/lib/money";
 
 export interface SourceCurrencyGroup<T> {
   dataSource: DataSource;
-  currency: string;
+  currency: Currency;
   records: T[];
 }
 
 export function groupRecordsBySourceAndCurrency<
-  T extends { dataSource: DataSource; currency: string },
+  T extends { dataSource: DataSource; currency: Currency },
 >(records: T[]): SourceCurrencyGroup<T>[] {
   const groups = new Map<string, SourceCurrencyGroup<T>>();
   for (const record of records) {
@@ -33,18 +36,30 @@ export function groupRecordsBySourceAndCurrency<
 
 export interface BookingSourceSummary {
   dataSource: DataSource;
-  currency: string;
+  currency: Currency;
   bookings: Booking[];
   statusCounts: Record<BookingStatus, number>;
-  grossKobo: number;
-  platformFeesKobo: number;
-  providerShareKobo: number;
+  gross: Money;
+  platformFees: Money;
+  providerShare: Money;
 }
 
 export function summarizeBookingsBySourceAndCurrency(
   bookings: Booking[],
 ): BookingSourceSummary[] {
-  return groupRecordsBySourceAndCurrency(bookings).map((group) => {
+  for (const booking of bookings) {
+    assertBookingMoneyConsistency(
+      booking.amount,
+      booking.platformFee,
+      booking.providerShare,
+    );
+  }
+  const rows = bookings.map((booking) => ({
+    dataSource: booking.dataSource,
+    currency: booking.amount.currency,
+    booking,
+  }));
+  return groupRecordsBySourceAndCurrency(rows).map((group) => {
     const statusCounts: Record<BookingStatus, number> = {
       draft: 0,
       pending_payment: 0,
@@ -54,22 +69,22 @@ export function summarizeBookingsBySourceAndCurrency(
       payment_failed: 0,
       refunded: 0,
     };
-    for (const booking of group.records) {
+    for (const { booking } of group.records) {
       statusCounts[booking.status] += 1;
     }
     return {
       dataSource: group.dataSource,
       currency: group.currency,
-      bookings: group.records,
+      bookings: group.records.map(({ booking }) => booking),
       statusCounts,
-      grossKobo: group.records.reduce((sum, booking) => sum + booking.amountKobo, 0),
-      platformFeesKobo: group.records.reduce(
-        (sum, booking) => sum + booking.platformFeeKobo,
-        0,
+      gross: sumMoney(group.records.map(({ booking }) => booking.amount), group.currency),
+      platformFees: sumMoney(
+        group.records.map(({ booking }) => booking.platformFee),
+        group.currency,
       ),
-      providerShareKobo: group.records.reduce(
-        (sum, booking) => sum + booking.providerShareKobo,
-        0,
+      providerShare: sumMoney(
+        group.records.map(({ booking }) => booking.providerShare),
+        group.currency,
       ),
     };
   });
@@ -78,5 +93,10 @@ export function summarizeBookingsBySourceAndCurrency(
 export function groupPaymentAttempts(
   attempts: PaymentAttemptRecord[],
 ): SourceCurrencyGroup<PaymentAttemptRecord>[] {
-  return groupRecordsBySourceAndCurrency(attempts);
+  return groupRecordsBySourceAndCurrency(
+    attempts.map((attempt) => ({
+      ...attempt,
+      currency: attempt.amount.currency,
+    })),
+  );
 }

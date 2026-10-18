@@ -16,7 +16,7 @@ export const SEED_META = {
   environment: "local-demo",
   paymentProvider: "none",
   paymentMode: "none" as const,
-  note: "Milestone 1 — UI only. No payment providers are connected.",
+  note: "Fictional seed records. No payment providers are connected.",
 } as const;
 
 export const providers: ServiceProvider[] = [
@@ -31,7 +31,7 @@ export const providers: ServiceProvider[] = [
     isMock: true,
     onboardingStatus: "unavailable",
     onboardingNote:
-      "Mock seller profile only. Stripe Connect / Paystack subaccounts are not configured in Milestone 1.",
+      "Fictional provider profile only. No Stripe Connect or Paystack account is linked.",
     payoutStatus: "none",
   },
   {
@@ -87,7 +87,7 @@ export const providers: ServiceProvider[] = [
     isMock: true,
     onboardingStatus: "unavailable",
     onboardingNote:
-      "Mock seller profile only. Seller onboarding experiments start in later milestones.",
+      "Fictional provider profile only. Seller onboarding and provider connections are unavailable.",
     payoutStatus: "none",
   },
   {
@@ -113,8 +113,7 @@ export const listings: Listing[] = [
     title: "Half-day portrait session",
     description:
       "Three-hour on-location portrait shoot with 25 edited images delivered within five business days. Ideal for personal brands and LinkedIn refreshes.",
-    priceKobo: 7_500_000, // ₦75,000
-    currency: "NGN",
+    price: { amountMinor: 7_500_000, currency: "NGN" }, // ₦75,000
     durationMinutes: 180,
     availabilityNote: "Weekends in Lagos · book 5+ days ahead",
     category: "photography",
@@ -126,8 +125,7 @@ export const listings: Listing[] = [
     title: "Event photography (4 hours)",
     description:
       "Coverage for birthdays, engagements, and small corporate mixers. Includes online gallery and highlight selects.",
-    priceKobo: 18_000_000, // ₦180,000
-    currency: "NGN",
+    price: { amountMinor: 18_000_000, currency: "NGN" }, // ₦180,000
     durationMinutes: 240,
     availabilityNote: "Fri–Sun · Lagos Island preferred",
     category: "photography",
@@ -139,8 +137,7 @@ export const listings: Listing[] = [
     title: "JAMB maths intensive (4 sessions)",
     description:
       "Four 90-minute focused sessions covering algebra, geometry, and past-question strategy. Materials included.",
-    priceKobo: 4_000_000, // ₦40,000
-    currency: "NGN",
+    price: { amountMinor: 4_000_000, currency: "NGN" }, // ₦40,000
     durationMinutes: 360,
     availabilityNote: "Abuja in-person or Zoom · evenings",
     category: "tutoring",
@@ -152,8 +149,7 @@ export const listings: Listing[] = [
     title: "Intimate event planning package",
     description:
       "Vendor coordination, run-of-show, and on-site management for gatherings up to 60 guests in Abuja.",
-    priceKobo: 25_000_000, // ₦250,000
-    currency: "NGN",
+    price: { amountMinor: 25_000_000, currency: "NGN" }, // ₦250,000
     durationMinutes: 480,
     availabilityNote: "2-week lead time recommended",
     category: "events",
@@ -165,8 +161,7 @@ export const listings: Listing[] = [
     title: "Apartment deep clean",
     description:
       "Full deep clean for a 2–3 bedroom flat, including kitchen appliances and bathrooms. Eco-friendly products on request.",
-    priceKobo: 3_500_000, // ₦35,000
-    currency: "NGN",
+    price: { amountMinor: 3_500_000, currency: "NGN" }, // ₦35,000
     durationMinutes: 240,
     availabilityNote: "Mon–Sat · Ibadan metro",
     category: "home",
@@ -178,8 +173,7 @@ export const listings: Listing[] = [
     title: "Two-week product growth sprint",
     description:
       "Audit, experiment backlog, and weekly working sessions for an early-stage product team. Async Slack support included.",
-    priceKobo: 45_000_000, // ₦450,000
-    currency: "NGN",
+    price: { amountMinor: 45_000_000, currency: "NGN" }, // ₦450,000
     durationMinutes: 600,
     availabilityNote: "Remote · limited slots monthly",
     category: "tech",
@@ -191,8 +185,7 @@ export const listings: Listing[] = [
     title: "Private yoga session",
     description:
       "One-on-one mobility and yoga session tailored to beginners or desk workers. Mat provided for studio visits.",
-    priceKobo: 1_200_000, // ₦12,000
-    currency: "NGN",
+    price: { amountMinor: 1_200_000, currency: "NGN" }, // ₦12,000
     durationMinutes: 60,
     availabilityNote: "Kano studio or outdoor · mornings",
     category: "wellness",
@@ -203,25 +196,26 @@ export const listings: Listing[] = [
 function bookingFromListing(
   partial: Omit<
     Booking,
-    | "amountKobo"
-    | "currency"
-    | "platformFeeKobo"
-    | "providerShareKobo"
+    | "amount"
+    | "platformFee"
+    | "providerShare"
     | "listingId"
     | "providerId"
   > & { listingId: string },
 ): Booking {
   const listing = listings.find((l) => l.id === partial.listingId);
   if (!listing) throw new Error(`Unknown listing ${partial.listingId}`);
-  const fees = calculatePlatformFee(listing.priceKobo);
+  const fees = calculatePlatformFee(
+    listing.price.amountMinor,
+    listing.price.currency,
+  );
   return {
     ...partial,
     listingId: listing.id,
     providerId: listing.providerId,
-    amountKobo: fees.amountKobo,
-    currency: "NGN",
-    platformFeeKobo: fees.platformFeeKobo,
-    providerShareKobo: fees.providerShareKobo,
+    amount: fees.amount,
+    platformFee: fees.platformFee,
+    providerShare: fees.providerShare,
   };
 }
 
@@ -276,10 +270,9 @@ export const paymentAttempts: PaymentAttemptRecord[] = [
     provider: "none",
     mode: "none",
     status: "not_started",
-    amountKobo: 7_500_000,
-    currency: "NGN",
+    amount: { amountMinor: 7_500_000, currency: "NGN" },
     dataSource: "seed",
-    note: "No payment provider invoked. Placeholder for Milestone 2+ flows.",
+    note: "No payment provider was invoked. This seed record illustrates an unstarted payment attempt.",
     createdAt: "2026-10-12T09:15:00+01:00",
   },
   {
@@ -288,8 +281,7 @@ export const paymentAttempts: PaymentAttemptRecord[] = [
     provider: "mock",
     mode: "simulated",
     status: "succeeded",
-    amountKobo: 4_000_000,
-    currency: "NGN",
+    amount: { amountMinor: 4_000_000, currency: "NGN" },
     dataSource: "seed",
     note: "Simulated success baked into seed data — not Stripe or Paystack.",
     createdAt: "2026-10-08T11:06:00+01:00",
@@ -300,12 +292,12 @@ export const webhookEvents: WebhookEventRecord[] = [
   {
     id: "wh_seed_placeholder",
     provider: "none",
-    eventType: "milestone.ui_only",
+    eventType: "demo.placeholder",
     receivedAt: "2026-10-12T09:00:00+01:00",
     processed: false,
     dataSource: "seed",
     summary:
-      "No real webhooks yet. Admin UI shows this placeholder so the event feed is ready for Milestone 3+.",
+      "No webhook events have been received. This illustrative row is not connected to a payment provider.",
   },
 ];
 

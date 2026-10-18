@@ -1,5 +1,17 @@
 export type DataSource = "seed" | "mock" | "provider_test" | "provider_live";
 
+export const SUPPORTED_CURRENCIES = ["NGN", "USD"] as const;
+export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
+
+/** Integer minor units paired with their currency (NGN kobo or USD cents). */
+export interface Money {
+  readonly amountMinor: number;
+  readonly currency: Currency;
+}
+
+/** Planned seller-created listing prices are USD-only. */
+export type SellerListingPrice = Money & { readonly currency: "USD" };
+
 export type PaymentModeLabel =
   | "none"
   | "simulated"
@@ -63,26 +75,41 @@ export interface Listing {
   providerId: string;
   title: string;
   description: string;
-  /** Amount in kobo (NGN * 100) for consistent money handling later. */
-  priceKobo: number;
-  currency: "NGN";
+  price: Money;
   durationMinutes: number;
   availabilityNote: string;
   category: ProviderCategory;
   isMock: true;
 }
 
+export type SellerListingStatus = "draft" | "published" | "paused";
+
+/** Persistent listing owned by a real seller profile; never a seed provider. */
+export interface SellerListing {
+  id: string;
+  sellerProfileId: string;
+  title: string;
+  description: string;
+  price: SellerListingPrice;
+  durationMinutes: number;
+  availabilityNote: string;
+  status: SellerListingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Booking {
   id: string;
   listingId: string;
+  /** Set only for bookings of persisted seller listings; seed catalog stays separate. */
+  sellerListingId?: string | null;
   providerId: string;
   customerName: string;
   customerEmail: string;
   scheduledFor: string;
-  amountKobo: number;
-  currency: "NGN";
-  platformFeeKobo: number;
-  providerShareKobo: number;
+  amount: Money;
+  platformFee: Money;
+  providerShare: Money;
   status: BookingStatus;
   paymentMode: PaymentModeLabel;
   paymentAttemptStatus: PaymentAttemptStatus;
@@ -107,8 +134,7 @@ export interface PaymentAttemptRecord {
   provider: "none" | "stripe" | "paystack" | "mock";
   mode: PaymentModeLabel;
   status: PaymentAttemptStatus;
-  amountKobo: number;
-  currency: "NGN";
+  amount: Money;
   dataSource: DataSource;
   note: string;
   createdAt: string;

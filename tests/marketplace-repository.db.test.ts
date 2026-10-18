@@ -40,7 +40,7 @@ describe("marketplace repository (postgres)", { skip: !hasDatabase }, () => {
   });
 
   it("creates, fails, pays, and reloads after pool recycle (process restart)", async () => {
-    const fees = calculatePlatformFee(4_000_000);
+    const fees = calculatePlatformFee(4_000_000, "NGN");
     const created = await createBooking({
       listingId: "list_maths_intensive",
       customerName: "DB Integration",
@@ -49,7 +49,10 @@ describe("marketplace repository (postgres)", { skip: !hasDatabase }, () => {
     });
     assert.equal(created.ok, true);
     if (!created.ok) return;
-    assert.equal(created.data.booking.platformFeeKobo, fees.platformFeeKobo);
+    assert.equal(
+      created.data.booking.platformFee.amountMinor,
+      fees.platformFee.amountMinor,
+    );
 
     const id = created.data.booking.id;
     const fail = await simulatePayment(id, "failure");

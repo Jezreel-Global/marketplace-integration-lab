@@ -2,7 +2,7 @@
 
 Hackathon learning app for a fictional Nigerian service marketplace. Browse seed listings, create **runtime** bookings, and run **labelled simulated payments**. No Stripe/Paystack live charges and no real money movement.
 
-**Current milestone: 3B — secure seller identity foundation. Stripe remains disabled and no Stripe API flow is implemented.**
+**Current milestone: 3C — currency-aware persistence foundation. Stripe remains disabled and all payments remain simulated.**
 
 This milestone adds only a disabled Stripe Connect readiness guard. It makes no provider API calls or payment-product eligibility claims.
 
@@ -14,6 +14,7 @@ This milestone adds only a disabled Stripe Connect readiness guard. It makes no 
 | 2C — Neon Postgres + public-demo hardening | Done |
 | 3A — Stripe Connect readiness guard | Account eligibility and payment API flow remain unverified and disabled |
 | 3B — Secure seller identity foundation | Clerk sign-in and separate seller profile; migration not applied |
+| 3C — Currency-aware persistence foundation | Migration 004 written, not applied; no seller listing UI |
 
 ## Architecture
 
@@ -37,7 +38,12 @@ scripts/                 migrate / reset-demo / optional JSON import
 - **Runtime bookings / payment attempts** live in Neon tables `runtime_bookings` and `runtime_payment_attempts`; seed fixtures remain in TypeScript and are never persisted by the app.
 - `001_runtime_bookings.sql` creates the runtime tables and indexes; `002_runtime_state_constraints.sql` constrains persisted state, mode, and source values. `npm run db:migrate` applies versioned migrations transactionally and records applied versions in `schema_migrations`.
 - Fees are always computed with `calculatePlatformFee` on the server. Payment attempts and booking transitions are written in a row-locked transaction.
+- Money is represented as `{ amountMinor, currency }`; the supported currencies are NGN and USD. Existing seed listings and historical rows remain NGN with their original minor-unit values. Seller-created listings are USD-only and store integer cents. There is no exchange-rate conversion.
 - Client components never receive `DATABASE_URL`. Runtime reads fail visibly with a safe message instead of presenting seed-only data as a complete database result.
+
+## Browser payment playground
+
+`/playground` is an interactive, browser-only walkthrough with predictable NGN and USD sample amounts, the shared illustrative 10% fee split, and simulated pending/success/failure lifecycle states. It does not create a booking, write to the database, call Stripe or Paystack, or move money. It performs no FX conversion and is separate from the persisted, administrator-only booking simulator.
 
 ## Environment variables
 
@@ -68,6 +74,24 @@ Customers can browse and create bookings without signing in. Seller sign-up and 
 The `/admin` page and simulated payment/cancellation controls require a verified Clerk session whose user ID appears in the server-only `ADMIN_CLERK_USER_IDS` comma-separated allowlist. Missing Clerk configuration, a missing or malformed allowlist, signed-out sessions, and non-allowlisted users fail closed. Configure the same variable in ignored `.env.local` for local use and in the appropriate server-side Vercel environment settings before expecting an administrator to access the demo. `/provider` remains a public, seed-only illustration and is not linked to Clerk seller profiles.
 
 Migration `003_seller_profiles.sql` creates the seller-profile table and unique Clerk identity constraint. It is a reviewed migration and is not applied automatically; apply it only after confirming the intended Neon database. Profile persistence also requires `DATABASE_URL`.
+
+## Currency-aware persistence (Milestone 3C)
+
+`004_currency_aware_marketplace.sql` adds canonical `BIGINT` minor-unit snapshots for bookings and simulated payment attempts. Each persisted amount must be an integer from zero through `9007199254740991` (`Number.MAX_SAFE_INTEGER`); seller listing prices must be positive and within the same bound. The migration checks any pre-existing canonical values before backfill and aborts on unsafe or conflicting values instead of replacing them. Existing `amount_kobo`, fee, and share values are copied as NGN without conversion; the old kobo columns remain compatibility fields and are null for USD rows. NGN remains additionally limited to the legacy PostgreSQL `INTEGER` kobo range during compatibility. Payment attempts reference their booking using `(booking_id, currency, amount_minor)`, preventing a currency or amount mismatch in the database; the migration checks historical snapshots and fails rather than rewriting a mismatch. `seller_listings` references `seller_profiles`; its price is positive USD cents and its owner is resolved from the Clerk user ID on the server. New listings start as drafts. The server booking repository can price a published seller listing from its stored price and snapshot the USD amount, 10% fee, and provider share; the seller listing UI and public browsing integration are not part of this milestone.
+
+The current migration runner applies **every unapplied SQL file in sorted filename order** inside a transaction and records each filename in `schema_migrations`. Migration 004 depends on `seller_profiles`; if 003 is still pending, the runner will apply 003 and then 004. Do not treat `npm run db:migrate` as a 004-only command. Before any future execution, verify the intended database/branch in Neon and Vercel, confirm the database name and host independently, inspect `schema_migrations` for 001–003, take/verify a recoverable backup, and review the complete pending migration list. Also check that every existing payment attempt has the same currency and kobo amount as its booking: migration 004 adds a composite foreign key over booking ID, currency, and canonical amount, so inconsistent historic rows will stop the migration transaction. This milestone did not connect to a database or run a migration.
+
+The sync triggers preserve old NGN-only writes by copying legacy kobo snapshots into canonical fields. Currency-aware application writes set a transaction-local PostgreSQL flag; the triggers then reject conflicting dual representations and synchronize the NGN compatibility columns. The flag ends with the transaction and cannot leak through pooled connections. The original integer kobo columns remain readable. Existing application versions still cannot safely read USD records because the legacy kobo values are null; keep USD listing/booking behavior disabled in Production until the schema and deployed application compatibility have been separately verified. NGN values above the legacy PostgreSQL `INTEGER` range are also rejected during this compatibility phase. A schema rollback after creating USD records is unsafe without first exporting/removing or explicitly migrating those records. The migration should be considered forward-only once USD rows exist; do not drop canonical columns or seller listings as a routine rollback. `npm run db:migrate` must be run only after the target and history preflight is completed.
+
+The isolated migration regression fixture is `tests/migration-004-disposable.sql`. When PostgreSQL 16's `pg_virtualenv` is available, run it only through a throwaway cluster:
+
+```bash
+pg_virtualenv -v 16 psql -X -v ON_ERROR_STOP=1 -d postgres -f tests/migration-004-disposable.sql
+```
+
+The fixture creates and mutates a schema and synthetic records. Never replace `pg_virtualenv` with a Neon, Vercel, local development, or other persistent database connection. This milestone has not accessed or changed any persistent database, and no persistent migration has been approved or performed.
+
+All new seller listings are USD-only. NGN seed prices and historical booking/payment values preserve their exact old amounts. There is no FX service or estimated NGN display amount in this milestone. Stripe remains disabled (`STRIPE_CONNECT_ENABLED=false`); seller earnings and fees remain illustrative snapshots and simulated payment outcomes do not move real money.
 
 ## Stripe Connect readiness gate
 
@@ -165,6 +189,8 @@ npm run build
    ```bash
    DATABASE_URL='(production URL from Vercel/Neon)' npm run db:migrate
    ```
+
+   This is general project documentation only. Migration 004 remains unapproved for every persistent environment; do not use this command for 004 until a separate target/data preflight and explicit migration approval are complete. USD seller listing and booking behavior must remain disabled in Production until the migrated schema and deployed code are separately verified.
 
 6. Verify:
    - Home page loads with seed listings and does not list runtime booking IDs.

@@ -44,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </span>{" "}
               — hackathon learning project. Not a production payments platform.
             </p>
-            <p>Milestone 3B · authenticated seller profiles; simulated payments only</p>
+            <p>Seller profiles require sign-in · simulated payments only</p>
           </div>
         </footer>
       </body>

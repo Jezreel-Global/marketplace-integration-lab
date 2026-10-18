@@ -12,10 +12,9 @@ export type PublicBookingDisplay = Pick<
   | "listingId"
   | "providerId"
   | "scheduledFor"
-  | "amountKobo"
-  | "currency"
-  | "platformFeeKobo"
-  | "providerShareKobo"
+  | "amount"
+  | "platformFee"
+  | "providerShare"
   | "status"
   | "paymentMode"
   | "paymentAttemptStatus"
@@ -30,10 +29,9 @@ export function toPublicBookingDisplay(booking: Booking): PublicBookingDisplay {
     listingId: booking.listingId,
     providerId: booking.providerId,
     scheduledFor: booking.scheduledFor,
-    amountKobo: booking.amountKobo,
-    currency: booking.currency,
-    platformFeeKobo: booking.platformFeeKobo,
-    providerShareKobo: booking.providerShareKobo,
+    amount: booking.amount,
+    platformFee: booking.platformFee,
+    providerShare: booking.providerShare,
     status: booking.status,
     paymentMode: booking.paymentMode,
     paymentAttemptStatus: booking.paymentAttemptStatus,

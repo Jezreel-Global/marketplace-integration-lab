@@ -1,32 +1,52 @@
 import { PLATFORM_FEE_BPS } from "@/lib/brand";
+import {
+  assertMinorUnitAmount,
+  createMoney,
+  minorUnitsFromBigInt,
+} from "@/lib/money";
+import type { Currency, Money } from "@/types/marketplace";
 
 export interface FeeBreakdown {
-  amountKobo: number;
-  platformFeeKobo: number;
-  providerShareKobo: number;
+  amount: Money;
+  platformFee: Money;
+  providerShare: Money;
   platformFeeBps: number;
   platformFeePercent: number;
 }
 
 /** Illustrative marketplace fee split. Not a settlement or payout. */
 export function calculatePlatformFee(
-  amountKobo: number,
+  amountMinor: number,
+  currency: Currency,
   platformFeeBps: number = PLATFORM_FEE_BPS,
 ): FeeBreakdown {
-  if (!Number.isInteger(amountKobo) || amountKobo < 0) {
-    throw new Error("amountKobo must be a non-negative integer");
-  }
-  if (!Number.isInteger(platformFeeBps) || platformFeeBps < 0 || platformFeeBps > 10_000) {
+  assertMinorUnitAmount(amountMinor);
+  if (
+    !Number.isSafeInteger(platformFeeBps) ||
+    platformFeeBps < 0 ||
+    platformFeeBps > 10_000
+  ) {
     throw new Error("platformFeeBps must be an integer between 0 and 10000");
   }
 
-  const platformFeeKobo = Math.floor((amountKobo * platformFeeBps) / 10_000);
-  const providerShareKobo = amountKobo - platformFeeKobo;
+  const amount = createMoney(amountMinor, currency);
+  const amountBigInt = BigInt(amountMinor);
+  const platformFeeBigInt =
+    (amountBigInt * BigInt(platformFeeBps)) / BigInt(10_000);
+  const providerShareBigInt = amountBigInt - platformFeeBigInt;
+  const platformFee = createMoney(
+    minorUnitsFromBigInt(platformFeeBigInt),
+    currency,
+  );
+  const providerShare = createMoney(
+    minorUnitsFromBigInt(providerShareBigInt),
+    currency,
+  );
 
   return {
-    amountKobo,
-    platformFeeKobo,
-    providerShareKobo,
+    amount,
+    platformFee,
+    providerShare,
     platformFeeBps,
     platformFeePercent: platformFeeBps / 100,
   };

@@ -14,52 +14,64 @@ export default function HomePage({
       <Suspense fallback={null}>
         <DemoGateNotice searchParams={searchParams} />
       </Suspense>
-      <section className="relative min-h-[min(92vh,720px)] overflow-hidden border-b border-[var(--color-line)]">
-        <div className="absolute inset-0 opacity-90" aria-hidden>
-          <HeroVisual />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-canvas)] via-[var(--color-canvas)]/88 to-transparent" />
-        <div className="relative mx-auto flex min-h-[min(92vh,720px)] max-w-6xl items-center px-4 py-16 sm:px-6">
+      <section className="overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-canvas)]">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:min-h-[600px] lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-12 lg:py-14">
           <div className="rise-in max-w-xl">
-            <p className="font-[family-name:var(--font-display)] text-4xl font-extrabold tracking-tight text-[var(--color-brand)] sm:text-5xl lg:text-6xl">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-accent)]">
               {BRAND.name}
             </p>
-            <h1 className="mt-5 text-xl font-medium leading-snug text-[var(--color-ink)] sm:text-2xl">
+            <h1 className="mt-3 max-w-[18ch] font-[family-name:var(--font-display)] text-3xl font-bold leading-tight tracking-tight text-[var(--color-ink)] sm:text-4xl lg:text-[2.75rem]">
               {BRAND.tagline}
             </h1>
-            <p className="mt-3 text-[var(--color-ink-muted)]">
+            <p className="mt-4 max-w-lg text-base leading-7 text-[var(--color-ink-muted)]">
               Explore fictional Nigerian services and labelled payment modes —
               before any real money moves.
             </p>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <a href="#services" className="btn-primary">
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <a href="#services" className="btn-primary min-h-11 w-full sm:w-auto">
                 Browse listings
               </a>
               <Link
+                href="/playground"
+                className="focus-ring inline-flex min-h-11 w-full items-center justify-center rounded-md border border-[var(--color-brand)] px-4 py-2 font-semibold text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand-soft)] sm:w-auto"
+              >
+                Open payment playground
+              </Link>
+              <Link
                 href="/sign-up"
-                className="rounded-md border border-[var(--color-brand)] px-4 py-2 font-semibold text-[var(--color-brand)] transition-colors hover:bg-[var(--color-brand-soft)]"
+                className="focus-ring inline-flex min-h-11 w-full items-center justify-center rounded-md border border-[var(--color-line)] bg-white px-4 py-2 font-semibold text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface)] sm:w-auto"
               >
                 Become a seller
               </Link>
             </div>
-            <p className="mt-4 text-sm text-[var(--color-ink-muted)]">
+            <p className="mt-4 text-sm leading-6 text-[var(--color-ink-muted)]">
               Already have an account?{" "}
               <Link
                 href="/sign-in"
-                className="font-semibold text-[var(--color-brand)] underline"
+                className="font-semibold text-[var(--color-brand)] underline underline-offset-4"
               >
                 Sign in
               </Link>
               {" · "}
               <Link
                 href="/sign-up"
-                className="font-semibold text-[var(--color-brand)] underline"
+                className="font-semibold text-[var(--color-brand)] underline underline-offset-4"
               >
                 Create account
               </Link>
             </p>
             <div className="mt-4">
               <EnvBadge compact />
+            </div>
+          </div>
+          <div className="rise-in-delay hidden md:block">
+            <div className="overflow-hidden rounded-xl border border-[var(--color-line)] bg-white/80 p-3 shadow-sm sm:p-5">
+              <div className="aspect-[12/7] overflow-hidden rounded-lg bg-[var(--color-canvas)]">
+                <HeroVisual />
+              </div>
+              <p className="px-1 pt-3 text-xs font-medium text-[var(--color-ink-muted)]">
+                Customer booking → platform fee → provider share · simulated
+              </p>
             </div>
           </div>
         </div>
@@ -107,6 +119,9 @@ export default function HomePage({
           <p className="mt-1 max-w-2xl text-[var(--color-ink-muted)]">
             This demo has no payment-provider integration. Simulated outcomes remain
             distinct from provider-confirmed payment.
+          </p>
+          <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">
+            Try the <Link href="/playground" className="text-[var(--color-brand)] underline">browser-only payment playground</Link> for a guided fee split and sample lifecycle.
           </p>
           <div className="mt-6">
             <PaymentModeLegend />
